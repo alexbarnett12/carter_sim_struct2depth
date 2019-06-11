@@ -1,0 +1,10 @@
+{
+  "nodes": [],
+  "edges": [
+    {
+      "source": "control/isaac.planner.DifferentialBaseControl/cmd",
+      "target": "base_simulation/isaac.flatsim.DifferentialBaseSimulator/diff_base_command"
+    }
+  ]
+}
+

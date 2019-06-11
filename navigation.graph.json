@@ -1,0 +1,316 @@
+{
+  "nodes": [
+    {
+      "name": "shared_robot_model",
+      "components": [
+        {
+          "name": "RangeScanModel",
+          "type": "isaac::navigation::RangeScanModelFlatloc"
+        },
+        {
+          "name": "DifferentialBaseModel",
+          "type": "isaac::planner::DifferentialBaseModel"
+        }
+      ]
+    },
+    {
+      "name": "obstacle_world",
+      "components": [
+        {
+          "name": "obstacle_world",
+          "type": "isaac::navigation::ObstacleWorld"
+        }
+      ]
+    },
+    {
+      "name": "global_localization",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "grid_search_localizer",
+          "type": "isaac::navigation::GridSearchLocalizer"
+        }
+      ]
+    },
+    {
+      "name": "local_map",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.navigation.LocalMap",
+          "type": "isaac::navigation::LocalMap"
+        },
+        {
+          "name": "isaac.navigation.OccupancyToBinaryMap",
+          "type": "isaac::navigation::OccupancyToBinaryMap"
+        },
+        {
+          "name": "isaac.navigation.BinaryToDistanceMap",
+          "type": "isaac::navigation::BinaryToDistanceMap"
+        }
+      ]
+    },
+    {
+      "name": "robot_pose_initializer",
+      "start_order": -200,
+      "components": [
+        {
+          "name": "initial_pose",
+          "type": "isaac::alice::PoseInitializer"
+        }
+      ]
+    },
+    {
+      "name": "scan_localization",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.navigation.ParticleFilterLocalization",
+          "type": "isaac::navigation::ParticleFilterLocalization"
+        },
+        {
+          "name": "flatscan_viewer",
+          "type": "isaac::navigation::FlatscanViewer"
+        },
+        {
+          "name": "robot_viewer",
+          "type": "isaac::navigation::RobotViewer"
+        }
+      ]
+    },
+    {
+      "name": "segway_odometry",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.navigation.DifferentialBaseOdometry",
+          "type": "isaac::navigation::DifferentialBaseOdometry"
+        }
+      ]
+    },
+    {
+      "name": "lqr",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.planner.DifferentialBaseLqrPlanner",
+          "type": "isaac::planner::DifferentialBaseLqrPlanner"
+        }
+      ]
+    },
+    {
+      "name": "control",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.planner.DifferentialBaseControl",
+          "type": "isaac::planner::DifferentialBaseControl"
+        }
+      ]
+    },
+    {
+      "name": "global_plan",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.planner.GlobalPlanner",
+          "type": "isaac::planner::GlobalPlanner"
+        },
+        {
+          "name": "isaac.navigation.OccupancyToBinaryMap",
+          "type": "isaac::navigation::OccupancyToBinaryMap"
+        },
+        {
+          "name": "isaac.navigation.BinaryToDistanceMap",
+          "type": "isaac::navigation::BinaryToDistanceMap"
+        }
+      ]
+    },
+    {
+      "name": "localize",
+      "components": [
+        {
+          "name": "isaac.navigation.LocalizeBehavior",
+          "type": "isaac::navigation::LocalizeBehavior"
+        },
+        {
+          "name": "isaac.alice.Behavior",
+          "type": "isaac::alice::Behavior"
+        }
+      ]
+    },
+    {
+      "name": "go_to",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.navigation.GoTo",
+          "type": "isaac::navigation::GoTo"
+        }
+      ]
+    },
+    {
+      "name": "random_walk",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.navigation.RandomWalk",
+          "type": "isaac::navigation::RandomWalk"
+        }
+      ]
+    },
+    {
+      "name": "waypoint_as_goal",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.navigation.MapWaypointAsGoal",
+          "type": "isaac::navigation::MapWaypointAsGoal"
+        }
+      ]
+    },
+    {
+      "name": "pose_as_goal",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.navigation.PoseAsGoal",
+          "type": "isaac::navigation::PoseAsGoal"
+        },
+        {
+          "name": "pose_as_goal_frame",
+          "type": "isaac::alice::PoseInitializer"
+        }
+      ]
+    },
+    {
+      "name": "patrol",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.navigation.Patrol",
+          "type": "isaac::navigation::Patrol"
+        }
+      ]
+    },
+    {
+      "name": "goal_behavior",
+      "components": [
+        {
+          "name": "isaac.alice.Behavior",
+          "type": "isaac::alice::Behavior"
+        },
+        {
+          "name": "isaac.navigation.SelectorBehavior",
+          "type": "isaac::navigation::SelectorBehavior"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "segway_odometry/isaac.navigation.DifferentialBaseOdometry/odometry",
+      "target": "lqr/isaac.planner.DifferentialBaseLqrPlanner/odometry"
+    },
+    {
+      "source": "local_map/isaac.navigation.LocalMap/local_map",
+      "target": "local_map/isaac.navigation.OccupancyToBinaryMap/occupancy_map"
+    },
+    {
+      "source": "local_map/isaac.navigation.OccupancyToBinaryMap/binary_map",
+      "target": "local_map/isaac.navigation.BinaryToDistanceMap/binary_map"
+    },
+    {
+      "source": "local_map/isaac.navigation.LocalMap/local_map",
+      "target": "global_plan/isaac.navigation.OccupancyToBinaryMap/occupancy_map"
+    },
+    {
+      "source": "global_plan/isaac.navigation.OccupancyToBinaryMap/binary_map",
+      "target": "global_plan/isaac.navigation.BinaryToDistanceMap/binary_map"
+    },
+    {
+      "source": "lqr/isaac.planner.DifferentialBaseLqrPlanner/plan",
+      "target": "control/isaac.planner.DifferentialBaseControl/plan"
+    },
+    {
+      "source": "global_plan/isaac.planner.GlobalPlanner/plan",
+      "target": "lqr/isaac.planner.DifferentialBaseLqrPlanner/global_plan"
+    },
+    {
+      "source": "go_to/isaac.navigation.GoTo/goal_out",
+      "target": "global_plan/isaac.planner.GlobalPlanner/goal"
+    },
+    {
+      "source": "random_walk/isaac.navigation.RandomWalk/goal",
+      "target": "go_to/isaac.navigation.GoTo/goal_in"
+    },
+    {
+      "source": "go_to/isaac.navigation.GoTo/feedback",
+      "target": "random_walk/isaac.navigation.RandomWalk/feedback"
+    },
+    {
+      "source": "waypoint_as_goal/isaac.navigation.MapWaypointAsGoal/goal",
+      "target": "go_to/isaac.navigation.GoTo/goal_in"
+    },
+    {
+      "source": "pose_as_goal/isaac.navigation.PoseAsGoal/goal",
+      "target": "go_to/isaac.navigation.GoTo/goal_in"
+    },
+    {
+      "source": "patrol/isaac.navigation.Patrol/goal",
+      "target": "go_to/isaac.navigation.GoTo/goal_in"
+    },
+    {
+      "source": "range_scan_flattening/isaac.perception.RangeScanFlattening/flatscan",
+      "target": "global_localization/grid_search_localizer/flatscan"
+    },
+    {
+      "source": "range_scan_flattening/isaac.perception.RangeScanFlattening/flatscan",
+      "target": "scan_localization/isaac.navigation.ParticleFilterLocalization/flatscan"
+    },
+    {
+      "source": "range_scan_flattening/isaac.perception.RangeScanFlattening/flatscan",
+      "target": "scan_localization/flatscan_viewer/flatscan"
+    },
+    {
+      "source": "range_scan_flattening/isaac.perception.RangeScanFlattening/flatscan",
+      "target": "local_map/isaac.navigation.LocalMap/flatscan"
+    }
+  ]
+}

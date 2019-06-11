@@ -1,0 +1,73 @@
+{
+  "nodes": [
+    {
+      "name": "joystick",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.Joystick",
+          "type": "isaac::Joystick"
+        }
+      ]
+    },
+    {
+      "name": "carter_joystick",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.navigation.RobotRemoteControl",
+          "type": "isaac::navigation::RobotRemoteControl"
+        },
+        {
+          "name": "isaac.alice.FailsafeHeartbeat",
+          "type": "isaac::alice::FailsafeHeartbeat"
+        }
+      ]
+    },
+    {
+      "name": "virtual_gamepad_bridge",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "VirtualGamepadBridge",
+          "type": "isaac::navigation::VirtualGamepadBridge"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "control/isaac.planner.DifferentialBaseControl/cmd",
+      "target": "carter_joystick/isaac.navigation.RobotRemoteControl/ctrl"
+    },
+    {
+      "source": "joystick/isaac.Joystick/js_state",
+      "target": "carter_joystick/isaac.navigation.RobotRemoteControl/js_state"
+    },
+    {
+      "source": "carter_joystick/isaac.navigation.RobotRemoteControl/segway_cmd",
+      "target": "base_simulation/isaac.flatsim.DifferentialBaseSimulator/diff_base_command"
+    },
+    {
+      "source": "virtual_gamepad_bridge/VirtualGamepadBridge/joystick",
+      "target": "carter_joystick/isaac.navigation.RobotRemoteControl/js_state"
+    },
+    {
+      "source": "websight/WebsightServer/virtual_gamepad",
+      "target": "virtual_gamepad_bridge/VirtualGamepadBridge/request"
+    },
+    {
+      "source": "virtual_gamepad_bridge/VirtualGamepadBridge/reply",
+      "target": "websight/WebsightServer/virtual_gamepad_reply"
+    }
+  ]
+}

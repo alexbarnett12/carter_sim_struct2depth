@@ -1,0 +1,27 @@
+{
+  "control": {
+    "isaac.planner.DifferentialBaseControl": {
+      "manual_mode_channel": "carter_joystick/isaac.navigation.RobotRemoteControl/manual_mode"
+    }
+  },
+  "lqr": {
+    "isaac.planner.DifferentialBaseLqrPlanner": {
+      "manual_mode_channel": "carter_joystick/isaac.navigation.RobotRemoteControl/manual_mode"
+    }
+  },
+  "virtual_gamepad_bridge": {
+    "VirtualGamepadBridge": {
+      "tick_period": "100ms"
+    }
+  },
+  "carter_joystick": {
+    "isaac.alice.FailsafeHeartbeat": {
+      "interval": 0.25,
+      "failsafe_name": "carter",
+      "heartbeat_name": "deadman_switch"
+    },
+    "isaac.navigation.RobotRemoteControl": {
+      "tick_period": "10ms"
+    }
+  }
+}

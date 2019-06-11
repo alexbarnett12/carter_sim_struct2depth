@@ -1,0 +1,161 @@
+{
+  "name": "carter_sim",
+  "config_files": [
+    "apps/carter_sim/carter.config.json",
+    "apps/carter_sim/joystick.config.json"
+  ],
+  "graph_files": [
+    "apps/carter_sim/carter.graph.json",
+    "apps/carter_sim/joystick.graph.json"
+  ],
+  "modules": [
+    "map",
+    "perception",
+    "planner",
+    "viewers",
+    "flatsim",
+    "sensors:joystick",
+    "navigation",
+    "navigation:cartographer"
+  ],
+  "config": {
+    "cartographer": {
+      "isaac.navigation.Cartographer": {
+        "lua_configuration_directory": "../com_github_googlecartographer_cartographer/configuration_files/,apps/carter_sim/",
+        "lua_configuration_basename": "carter.lua",
+        "background_rows": 3000,
+        "background_cols": 3000,
+        "background_offset_x": -150,
+        "background_offset_y": -150,
+        "tick_period": "250ms"
+      },
+      "lidar_initializer": {
+        "lhs_frame": "robot",
+        "rhs_frame": "lidar",
+        "pose": [1.0, 0.0, 0.0, 0.0, -0.06, 0.0, 0.62]
+      }
+    },
+    "segway_odometry": {
+      "isaac.navigation.DifferentialBaseOdometry": {
+        "tick_period": "100Hz"
+      }
+    },
+    "control": {
+      "isaac.planner.DifferentialBaseControl": {
+        "use_tick_time": true,
+        "tick_period": "100Hz"
+      }
+    },
+    "websight": {
+      "WebsightServer": {
+        "webroot": "packages/sight/webroot",
+        "assetroot": "../isaac_assets",
+        "port": 3000,
+        "ui_config": {
+          "windows": {
+            "carter_sim - Cartographer": {
+              "renderer": "2d",
+              "dims": {
+                "width": 3000,
+                "height": 3000
+              },
+              "channels": [
+                {
+                  "name": "carter_sim/cartographer/isaac.navigation.Cartographer/map_background",
+                  "active": true
+                },
+                {
+                  "name": "carter_sim/cartographer/isaac.navigation.Cartographer/submaps",
+                  "active": true
+                },
+                {
+                  "name": "carter_sim/cartographer/isaac.navigation.Cartographer/trajectory_node_poses",
+                  "active": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "graph": {
+    "nodes": [
+      {
+        "name": "shared_robot_model",
+        "components": [
+          {
+            "name": "RangeScanModel",
+            "type": "isaac::navigation::RangeScanModelFlatloc"
+          },
+          {
+            "name": "DifferentialBaseModel",
+            "type": "isaac::planner::DifferentialBaseModel"
+          }
+        ]
+      },
+      {
+        "name": "cartographer",
+        "components": [
+          {
+            "name": "message_ledger",
+            "type": "isaac::alice::MessageLedger"
+          },
+          {
+            "name": "isaac.navigation.Cartographer",
+            "type": "isaac::navigation::Cartographer"
+          }
+        ]
+      },
+      {
+        "name": "local_map",
+        "components": [
+          {
+            "name": "message_ledger",
+            "type": "isaac::alice::MessageLedger"
+          },
+          {
+            "name": "isaac.navigation.LocalMap",
+            "type": "isaac::navigation::LocalMap"
+          }
+        ]
+      },
+      {
+        "name": "segway_odometry",
+        "components": [
+          {
+            "name": "message_ledger",
+            "type": "isaac::alice::MessageLedger"
+          },
+          {
+            "name": "isaac.navigation.DifferentialBaseOdometry",
+            "type": "isaac::navigation::DifferentialBaseOdometry"
+          }
+        ]
+      },
+      {
+        "name": "control",
+        "components": [
+          {
+            "name": "message_ledger",
+            "type": "isaac::alice::MessageLedger"
+          },
+          {
+            "name": "isaac.planner.DifferentialBaseControl",
+            "type": "isaac::planner::DifferentialBaseControl"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "source": "range_scan_flattening/isaac.perception.RangeScanFlattening/flatscan",
+        "target": "cartographer/isaac.navigation.Cartographer/flatscan"
+      },
+      {
+        "source": "range_scan_flattening/isaac.perception.RangeScanFlattening/flatscan",
+        "target": "local_map/isaac.navigation.LocalMap/flatscan"
+      }
+    ]
+  }
+}

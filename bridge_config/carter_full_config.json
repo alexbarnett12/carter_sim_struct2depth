@@ -1,0 +1,166 @@
+{
+  "A_CarterGroup": {
+    "ActorGroup": {
+      "actors": [
+        {
+          "name": "carter_1",
+          "reference": "Blueprint'/Game/Carter/VehicleRigs/Pawn_Carter_FirstPerson.Pawn_Carter_FirstPerson'",
+          "pose": [1, 0, 0, 0, -11.01, 63.47, 0.92]
+        }
+      ]
+    },
+    "MiscGroup": {
+      "actors": [
+        {
+          "name": "bp_controller",
+          "reference": "Blueprint'/Game/Blueprints/IsaacSimController_BP.IsaacSimController_BP'",
+          "pose": [1, 0, 0, 0, 0, 0, 0],
+          "spawn_config": {
+            "blueprint_variables": [
+              {
+                "properties": [
+                  {
+                    "name": "bDisableRendering",
+                    "value": true,
+                    "type": "bool"
+                  },
+                  {
+                    "name": "bSetFixedFrameRate",
+                    "value": true,
+                    "type": "bool"
+                  },
+                  { "name": "FixedFrameRate", "value": 30, "type": "float" }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "camera_overlay",
+          "reference": "Blueprint'/Game/Blueprints/UITools/IsaacSimCameraOverlayBP.IsaacSimCameraOverlayBP'",
+          "pose": [1, 0, 0, 0, 0, 0, 0]
+        }
+      ]
+    }
+  },
+  "CarterLidar": {
+    "LidarComponent": {
+      "parent_actor": "carter_1",
+      "parent_T_lidar": [1, 0, 0, 0, -0.06, 0.0, 0.38],
+      "horizontal_fov": 360.0,
+      "vertical_fov": 30.0,
+      "rotation_rate": 20.0,
+      "horizontal_resolution": 0.4,
+      "vertical_resolution": 4.0,
+      "min_range": 0.4,
+      "max_range": 100.0,
+      "draw_lidar_points": false
+    }
+  },
+  "CarterLeftCamera": {
+    "CameraComponent": {
+      "parent_actor": "carter_1",
+      "parent_T_camera": [1, 0, 0, 0, 0.11, 0.06, 0.31],
+      "cols": 960,
+      "rows": 540,
+      "fov": 90.0,
+      "frequency": 30,
+      "enable_rgb": true,
+      "enable_depth": true,
+      "enable_segmentation": true,
+      "enable_bounding_box": true,
+      "only_publish_latest": true,
+      "min_depth": 0,
+      "max_depth": 100.0,
+      "segmentation_classes": {
+        "static_mesh": [
+          {
+            "name": "box"
+          },
+          {
+            "name": "floor"
+          },
+          {
+            "name": "wall"
+          },
+          {
+            "name": "rack"
+          },
+          {
+            "name": "character"
+          }
+        ]
+      },
+      "bounding_box_settings": {
+        "all_bounding_boxes": false,
+        "occlusion_check": true,
+        "output_occlusion_ratio": true,
+        "ray_spacing_in_pixels": 10,
+        "max_rays_per_box": 16,
+        "occlusion_threshold": 0.8,
+        "draw_debug": false,
+        "classes": [
+          {
+            "name": "cone"
+          },
+          {
+            "name": "character"
+          }
+        ],
+        "exclude_classes": [
+          {
+            "name": "dummycharacter"
+          }
+        ]
+      }
+    }
+  },
+  "CarterRightCamera": {
+    "CameraComponent": {
+      "parent_actor": "carter_1",
+      "parent_T_camera": [1, 0, 0, 0, 0.11, -0.06, 0.31],
+      "cols": 960,
+      "rows": 540,
+      "fov": 90.0,
+      "frequency": 30,
+      "enable_rgb": true,
+      "enable_simulator_display": true,
+      "only_publish_latest": true
+    }
+  },
+  "CarterActuator": {
+    "ActuatorComponent": {
+      "parent_actor": "carter_1"
+    }
+  },
+  "LidarPublisher": {
+    "isaac.alice.TcpPublisher": {
+      "port": 5000,
+      "host": "localhost"
+    }
+  },
+  "ActorPublisher": {
+    "isaac.alice.TcpPublisher": {
+      "port": 5001,
+      "host": "localhost"
+    }
+  },
+  "ActuatorSubscriber": {
+    "isaac.alice.TcpSubscriber": {
+      "port": 5002,
+      "host": "localhost"
+    }
+  },
+  "LeftCameraPublisher": {
+    "isaac.alice.TcpPublisher": {
+      "port": 5003,
+      "host": "localhost"
+    }
+  },
+  "RightCameraPublisher": {
+    "isaac.alice.TcpPublisher": {
+      "port": 5004,
+      "host": "localhost"
+    }
+  }
+}

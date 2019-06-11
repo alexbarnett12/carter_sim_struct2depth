@@ -1,0 +1,31 @@
+{
+  "name": "carter_sim",
+  "config_files": [
+    "apps/carter_sim_mod/navigation.config.json",
+    "apps/carter_sim_mod/carter.config.json"
+  ],
+  "graph_files": [
+    "apps/carter_sim_mod/navigation.graph.json",
+    "apps/carter_sim_mod/carter.graph.json"
+  ],
+  "modules": [
+      "map",
+      "navigation",
+      "perception",
+      "planner",
+      "viewers",
+      "flatsim",
+      "//packages/ml:ml",
+      "//packages/ml:tensorflow"
+  ], 
+  "config": {},
+  "graph": {
+    "nodes": [],
+    "edges": [
+      {
+        "source": "control/isaac.planner.DifferentialBaseControl/cmd",
+        "target": "base_simulation/isaac.flatsim.DifferentialBaseSimulator/diff_base_command"
+      }
+    ]
+  }
+}

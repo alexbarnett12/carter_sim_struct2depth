@@ -1,0 +1,144 @@
+{
+  "map": {
+    "occupancy": {
+      "cell_size": 0.1,
+      "filename": "apps/assets/maps/nvidia_R_180306.png"
+    }
+  },
+  "lqr": {
+    "isaac.planner.DifferentialBaseLqrPlanner": {
+      "max_speed": 0.65,
+      "num_controls": 50,
+      "local_maps": ["local_map"],
+      "tick_period": "10Hz"
+    }
+  },
+  "local_map": {
+    "isaac.navigation.OccupancyToBinaryMap": {
+      "mean_threshold": 32,
+      "stdandard_deviation_threshold": 0
+    },
+    "isaac.navigation.BinaryToDistanceMap": {
+      "local_map_name": "local_map",
+      "compute_distance_inside": true,
+      "blur_factor": 3,
+      "max_distance": 5.0
+    }
+  },
+  "localize": {
+    "isaac.alice.Behavior": {
+      "aliases": [
+        "global_loc",
+        "local_loc",
+        "navigate"
+      ],
+      "nodes": [
+        "global_localization",
+        "scan_localization",
+        "global_plan"
+      ]
+    },
+    "isaac.navigation.LocalizeBehavior": {
+      "tick_period": "50ms"
+    }
+  },
+  "global_plan": {
+    "isaac.navigation.OccupancyToBinaryMap": {
+      "is_optimistic": true,
+      "mean_threshold": 196,
+      "stdandard_deviation_threshold": 64
+    },
+    "isaac.navigation.BinaryToDistanceMap": {
+      "local_map_name": "global_plan_local_map",
+      "compute_distance_inside": false,
+      "blur_factor": 0,
+      "max_distance": 2.0
+    },
+    "isaac.planner.GlobalPlanner": {
+      "local_map_name": "global_plan_local_map",
+      "tick_period": "1Hz"
+    }
+  },
+  "control": {
+    "isaac.planner.DifferentialBaseControl": {
+      "use_tick_time": true,
+      "tick_period": "100Hz"
+    }
+  },
+  "global_localization": {
+    "grid_search_localizer": {
+      "tick_period": "250ms"
+    }
+  },
+  "scan_localization": {
+    "robot_viewer": {
+      "tick_period": "50Hz"
+    }
+  },
+  "segway_odometry": {
+    "isaac.navigation.DifferentialBaseOdometry": {
+      "tick_period": "100Hz"
+    }
+  },
+  "go_to": {
+    "isaac.navigation.GoTo": {
+      "var_rx_speed_pos": "segway_odometry/isaac.navigation.DifferentialBaseOdometry/speed_p",
+      "var_rx_speed_rot": "segway_odometry/isaac.navigation.DifferentialBaseOdometry/speed_q",
+      "tick_period": "100ms"
+    }
+  },
+  "random_walk": {
+    "isaac.navigation.RandomWalk": {
+      "var_rx_has_arrived": "go_to/isaac.navigation.GoTo/has_arrived",
+      "var_rx_is_stationary": "go_to/isaac.navigation.GoTo/is_stationary",
+      "timeout": 10.0,
+      "robot_radius": 0.5,
+      "tick_period": "250ms"
+    }
+  },
+  "waypoint_as_goal": {
+    "isaac.navigation.MapWaypointAsGoal": {
+      "map_layer": "map/waypoints",
+      "tick_period": "250ms"
+    }
+  },
+  "pose_as_goal": {
+    "isaac.navigation.PoseAsGoal": {
+      "goal_frame": "pose_as_goal",
+      "tick_period": "250ms"
+    },
+    "pose_as_goal_frame": {
+      "lhs_frame": "world",
+      "rhs_frame": "pose_as_goal",
+      "pose": [1.0, 0.0, 0.0, 0.0, 10.0, 10.0, 0.0],
+      "attach_interactive_marker": true
+    }
+  },
+  "patrol": {
+    "isaac.navigation.Patrol": {
+      "var_rx_has_arrived": "go_to/isaac.navigation.GoTo/has_arrived",
+      "var_rx_is_stationary": "go_to/isaac.navigation.GoTo/is_stationary",
+      "tick_period": "250ms"
+    }
+  },
+  "goal_behavior": {
+    "isaac.alice.Behavior": {
+      "aliases": [
+        "random",
+        "waypoint",
+        "pose",
+        "patrol"
+      ],
+      "nodes": [
+        "random_walk",
+        "waypoint_as_goal",
+        "pose_as_goal",
+        "patrol"
+      ]
+    },
+    "isaac.navigation.SelectorBehavior": {
+      "desired_behavior": "random",
+      "tick_period": "50ms"
+    }
+  }
+}

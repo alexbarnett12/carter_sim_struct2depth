@@ -1,0 +1,172 @@
+{
+  "nodes": [
+    {
+      "name": "A_CarterGroup",
+      "components": [
+        {
+          "name": "MessageLedger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "ActorGroup",
+          "type": "isaac::sim_bridge::ActorGroup"
+        },
+        {
+          "name": "MiscGroup",
+          "type": "isaac::sim_bridge::ActorGroup"
+        }
+      ]
+    },
+    {
+      "name": "CarterLidar",
+      "components": [
+        {
+          "name": "MessageLedger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "LidarComponent",
+          "type": "isaac::sim_bridge::Lidar"
+        }
+      ]
+    },
+    {
+      "name": "CarterLeftCamera",
+      "components": [
+        {
+          "name": "MessageLedger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "CameraComponent",
+          "type": "isaac::sim_bridge::Camera"
+        }
+      ]
+    },
+    {
+      "name": "CarterRightCamera",
+      "components": [
+        {
+          "name": "MessageLedger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "CameraComponent",
+          "type": "isaac::sim_bridge::Camera"
+        }
+      ]
+    },
+    {
+      "name": "CarterActuator",
+      "components": [
+        {
+          "name": "MessageLedger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "ActuatorComponent",
+          "type": "isaac::sim_bridge::ActuatorGroup"
+        }
+      ]
+    },
+    {
+      "components": [
+        {
+          "name": "isaac.alice.MessageLedger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.alice.TcpPublisher",
+          "type": "isaac::alice::TcpPublisher"
+        }
+      ],
+      "name": "LeftCameraPublisher"
+    },
+    {
+      "components": [
+        {
+          "name": "isaac.alice.MessageLedger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.alice.TcpPublisher",
+          "type": "isaac::alice::TcpPublisher"
+        }
+      ],
+      "name": "RightCameraPublisher"
+    },
+    {
+      "components": [
+        {
+          "name": "isaac.alice.MessageLedger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.alice.TcpPublisher",
+          "type": "isaac::alice::TcpPublisher"
+        }
+      ],
+      "name": "LidarPublisher"
+    },
+    {
+      "components": [
+        {
+          "name": "isaac.alice.MessageLedger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.alice.TcpPublisher",
+          "type": "isaac::alice::TcpPublisher"
+        }
+      ],
+      "name": "ActorPublisher"
+    },
+    {
+      "components": [
+        {
+          "name": "isaac.alice.MessageLedger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.alice.TcpSubscriber",
+          "type": "isaac::alice::TcpSubscriber"
+        }
+      ],
+      "name": "ActuatorSubscriber"
+    }
+  ],
+  "edges": [
+    {
+      "source": "CarterLidar/LidarComponent/range_scan",
+      "target": "LidarPublisher/isaac.alice.TcpPublisher/LidarSensor"
+    },
+    {
+      "source": "A_CarterGroup/ActorGroup/rigid_state",
+      "target": "ActorPublisher/isaac.alice.TcpPublisher/bodies"
+    },
+    {
+      "source": "ActuatorSubscriber/isaac.alice.TcpSubscriber/physics_actuation",
+      "target": "CarterActuator/ActuatorComponent/physics_actuation"
+    },
+    {
+      "source": "CarterLeftCamera/CameraComponent/color_image",
+      "target": "LeftCameraPublisher/isaac.alice.TcpPublisher/ColorSensor"
+    },
+    {
+      "source": "CarterLeftCamera/CameraComponent/depth_image",
+      "target": "LeftCameraPublisher/isaac.alice.TcpPublisher/DepthSensor"
+    },
+    {
+      "source": "CarterLeftCamera/CameraComponent/segmentation_image",
+      "target": "LeftCameraPublisher/isaac.alice.TcpPublisher/SegmentationSensor"
+    },
+    {
+      "source": "CarterLeftCamera/CameraComponent/bounding_box",
+      "target": "LeftCameraPublisher/isaac.alice.TcpPublisher/BoundingBox"
+    },
+    {
+      "source": "CarterRightCamera/CameraComponent/color_image",
+      "target": "RightCameraPublisher/isaac.alice.TcpPublisher/ColorSensor"
+    }
+  ]
+}
