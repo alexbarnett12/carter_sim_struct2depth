@@ -2,26 +2,20 @@ import os
 import sys
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
 
-# Root directory of the project
-ROOT_DIR = os.path.abspath("./Mask_RCNN")
-
-# Import Mask RCNN
-sys.path.append(ROOT_DIR)  # To find local version of the library
-from mrcnn import utils
-import mrcnn.model as modellib
-from mrcnn import visualize
-
-# Import COCO config
-sys.path.append(os.path.join(ROOT_DIR, "samples/coco/"))  # To find local version
-import coco
+# Mask RCNN modules
+from struct2depth.Mask_RCNN.mrcnn import utils
+import struct2depth.Mask_RCNN.mrcnn.model as modellib
+from struct2depth.Mask_RCNN.mrcnn import visualize
+from struct2depth.Mask_RCNN.samples import coco
 
 # Directory to save logs and trained model
+ROOT_DIR = os.path.abspath("./Mask_RCNN")
 MODEL_DIR = os.path.join(ROOT_DIR, "mrcnn_logs")
 
 # Local path to trained weights file
-COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
+COCO_MODEL_PATH = "./Mask_RCNN/"
+    # os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 
 # Directory of images to run detection on
 IMAGE_DIR = os.path.join(ROOT_DIR, "images")

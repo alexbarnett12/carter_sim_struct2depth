@@ -1,5 +1,4 @@
 import os
-from absl import app
 
 DATA_DIR = 'kitti_processed_data'
 OUTPUT_DIR = 'kitti_processed_data'
