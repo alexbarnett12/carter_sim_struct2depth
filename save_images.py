@@ -10,7 +10,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 from struct2depth import util
-from struct2depth.process_image import process_image
+from struct2depth.process_image import create_mask
 import time
 
 # Root directory of the Isaac
@@ -34,7 +34,7 @@ HEIGHT = 128
 OUTPUT_DIR = 'synth_images'
 
 # Number of samples to acquire in batch
-kSampleNumbers = 500
+kSampleNumbers = 1
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -80,17 +80,14 @@ while True:
     images = bridge.acquire_samples(kSampleNumbers)
     cv2.imwrite("bla.png", np.uint8(np.array([images[0][0]])))
 
-    # Create wide image and segmentation triplets
-    image_seq = []
-    seg_seq = []
-    for i in range(0, kSampleNumbers - 2):
-        big_img, big_seg_img = process_image(np.array([images[i][0],
-                                                       images[i + 1][0],
-                                                       images[i + 2][0]]))
+    for i in range(kSampleNumbers):
+        # Create segmentation mask
+        img = cv2.resize(images[i][0], (WIDTH, HEIGHT))
+        seg_img = create_mask(img)
 
         # Save to directory
-        cv2.imwrite('/usr/local/lib/isaac/apps/carter_sim_struct2depth/synth_images/{}.png'.format(count), np.uint8(big_img))
-        cv2.imwrite('/usr/local/lib/isaac/apps/carter_sim_struct2depth/synth_images/{}-fseg.png'.format(count), big_seg_img)
+        cv2.imwrite('/usr/local/lib/isaac/apps/carter_sim_struct2depth/synth_images/{}.png'.format(count), img)
+        cv2.imwrite('/usr/local/lib/isaac/apps/carter_sim_struct2depth/synth_images/{}-fseg.png'.format(count), seg_img)
         print('saved images')
 
         count += 1

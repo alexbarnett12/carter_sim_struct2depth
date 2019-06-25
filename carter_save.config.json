@@ -120,7 +120,7 @@
   },
     "CarterTrainingSamples": {
 	"isaac.ml.SampleAccumulator": {
-	    "sample_buffer_size": 500
+	    "sample_buffer_size": 1
 	}
     },
   "RightCameraSubscriber": {

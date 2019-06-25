@@ -7,15 +7,15 @@ import tensorflow as tf
 from struct2depth.Mask_RCNN.mrcnn import utils
 import struct2depth.Mask_RCNN.mrcnn.model as modellib
 from struct2depth.Mask_RCNN.mrcnn import visualize
-from struct2depth.Mask_RCNN.samples import coco
+from struct2depth.Mask_RCNN.samples.coco import coco
 
 # Directory to save logs and trained model
 ROOT_DIR = os.path.abspath("./Mask_RCNN")
 MODEL_DIR = os.path.join(ROOT_DIR, "mrcnn_logs")
 
 # Local path to trained weights file
-COCO_MODEL_PATH = "./Mask_RCNN/"
-    # os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
+COCO_MODEL_PATH = "/usr/local/lib/isaac/apps/carter_sim_struct2depth/struct2depth/Mask_RCNN/mask_rcnn_coco.h5"
+# os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 
 # Directory of images to run detection on
 IMAGE_DIR = os.path.join(ROOT_DIR, "images")
@@ -98,7 +98,7 @@ class MaskGenerator:
             mask = masks[:, :, i]
             class_id = class_ids[i]
             for j in range(0, seg_img.shape[2]):
-                seg_img[:, :, j] += np.uint8(mask * class_id * self.color_code_scale)
+                seg_img[:, :, j] += np.uint8(mask * class_id)
 
         # Visualize seg img
         # imgplot = plt.imshow(seg_img)

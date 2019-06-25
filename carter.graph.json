@@ -168,34 +168,45 @@
       ],
       "name": "LeftCameraSubscriber"
     },
-      
     {
-            "name": "LeftColorCameraEncoder",
-          "components": [
-              {
-                  "name": "message_ledger",
-                  "type": "isaac::alice::MessageLedger"
-              },
-              {
-                  "name": "isaac.ml.ColorCameraEncoder",
-                  "type": "isaac::ml::ColorCameraEncoder"
-              }
-          ]
-      },
-      {
-          "name": "CarterTrainingSamples",
-          "components": [
-              {
-                  "name": "message_ledger",
-                  "type": "isaac::alice::MessageLedger"
-              },
-              {
-                  "name": "isaac.ml.SampleAccumulator",
-                  "type": "isaac::ml::SampleAccumulator"
-              }
-          ]
-      },
-
+      "name": "LeftColorCameraEncoder",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.ml.ColorCameraEncoder",
+          "type": "isaac::ml::ColorCameraEncoder"
+        }
+      ]
+    },
+    {
+      "name": "pinhole_to_tensor",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.alice.PyCodelet",
+          "type": "isaac::alice::PyCodelet"
+        }
+      ]
+    },
+    {
+      "name": "CarterTrainingSamples",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.ml.SampleAccumulator",
+          "type": "isaac::ml::SampleAccumulator"
+        }
+      ]
+    },
     {
       "components": [
         {
@@ -286,14 +297,18 @@
       "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/BoundingBox",
       "target": "LeftDetectionsViewer/isaac.viewers.DetectionsViewer/detections"
     },
-         {
-          "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/ColorSensor",
-          "target": "LeftColorCameraEncoder/isaac.ml.ColorCameraEncoder/rgb_image"
-      },
-      {
-          "source": "LeftColorCameraEncoder/isaac.ml.ColorCameraEncoder/tensor",
-          "target": "CarterTrainingSamples/isaac.ml.SampleAccumulator/samples"
-      },
+    {
+      "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/ColorSensor",
+      "target": "LeftColorCameraEncoder/isaac.ml.ColorCameraEncoder/rgb_image"
+    },
+    {
+      "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/ColorSensor",
+      "target": "pinhole_to_tensor/isaac.alice.PyCodelet/rgb_image"
+    },
+    {
+      "source": "LeftColorCameraEncoder/isaac.ml.ColorCameraEncoder/tensor",
+      "target": "CarterTrainingSamples/isaac.ml.SampleAccumulator/samples"
+    },
     {
       "source": "RightCameraSubscriber/isaac.alice.TcpSubscriber/ColorSensor",
       "target": "RightColorCameraViewer/isaac.viewers.ColorCameraViewer/color_listener"

@@ -27,7 +27,7 @@ import numpy as np
 import cv2
 
 from struct2depth import util
-from struct2depth.create_image_triplet import create_triplet
+from struct2depth.process_image import ImageProcessor
 import time
 
 gfile = tf.gfile
@@ -48,6 +48,8 @@ sys.path.append(ROOT_DIR)
 
 from engine.pyalice import *
 import packages.ml
+from pinhole_to_tensor import PinholeToTensor
+import capnp
 
 # Op names.
 COLOR_IMAGE_NAME = 'rgb_image'
@@ -151,6 +153,7 @@ class DataReader(object):
                 app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
                 app.load_graph("apps/assets/maps/carter_warehouse_p.graph.json")
                 app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
+                app.register({"pinhole_to_tensor": PinholeToTensor})
 
                 # Startup the bridge to get data.
                 node = app.find_node_by_name("CarterTrainingSamples")
@@ -169,31 +172,41 @@ class DataReader(object):
                 print("{} Samples acquired".format(num))
 
                 images = bridge.acquire_samples(kSampleNumbers)
+                # cv2.imwrite('messigray.png', np.array(images[0][0]))
+                # print(np.shape(images))
+                # print(np.shape(images[0][0]))
+                # print(images[0][0])
+                # cv2.imshow('image', np.array(images[0][0]) / 255.)
+                # k = cv2.waitKey(0)
+                # if k == 27:  # wait for ESC key to exit
+                #     cv2.destroyAllWindows()
+                # elif k == ord('s'):  # wait for 's' key to save and exit
+                #     cv2.imwrite('messigray.png', big_img)
+                #     cv2.destroyAllWindows()
 
-                # Create wide image triplets
+                # Create wide image and segmentation triplets
                 image_seq = []
                 seg_seq = []
-                for i in range(0, kSampleNumbers - 3):
-                    big_img = create_triplet(np.array([images[i][0],
-                                                       images[i+1][0],
-                                                       images[i+2][0]]))
-                    # Add images and seg masks to new sequences
+                img_processor = ImageProcessor()
+                for i in range(0, kSampleNumbers - 2):
+                    big_img, big_seg_img = img_processor.process_image(np.array([images[i][0],
+                                                                   images[i + 1][0],
+                                                                   images[i + 2][0]]))
+
+                    # Add images and seg masks to sequences
                     image_seq.append(big_img)
-                    # seg_seq.append(big_seg_img)
+                    seg_seq.append(big_seg_img)
 
-                # Convert to array
+                # Convert to arrays
                 image_seq = np.asarray(image_seq)
-
-                '''Verify images are being processed correctly - DONE'''
-                # print(np.shape(image_seq))
-                # cv2.namedWindow('image', cv2.WINDOW_NORMAL)
-                # cv2.imshow('image', np.uint8(image_seq[2]))
-                # cv2.waitKey(0)
-                # cv2.destroyAllWindows()
-
-                # Create an iterator over the data using tf.data.
-                # dataset = get_dataset(bridge, self.batch_size)
-                # next_element = dataset.make_one_shot_iterator().get_next()
+                seg_seq = np.asarray(seg_seq)
+                # cv2.imshow('image', big_img)
+                # k = cv2.waitKey(0)
+                # if k == 27:  # wait for ESC key to exit
+                #     cv2.destroyAllWindows()
+                # elif k == ord('s'):  # wait for 's' key to save and exit
+                #     cv2.imwrite('messigray.png', big_img)
+                #     cv2.destroyAllWindows()
 
             # with tf.name_scope('load_intrinsics'):
             #   cam_reader = tf.TextLineReader()
@@ -205,61 +218,73 @@ class DataReader(object):
             #   raw_cam_vec = tf.stack(raw_cam_vec)
             #   intrinsics = tf.reshape(raw_cam_vec, [3, 3])
 
-            # with tf.name_scope('convert_image'):
-            #     image_seq = self.preprocess_image(image_seq)  # Converts to float.
-            #
-            # if self.random_color:
-            #     with tf.name_scope('image_augmentation'):
-            #         image_seq = self.augment_image_colorspace(image_seq)
-            print("image_seq shape: {}".format(np.shape(image_seq)))
-            print(type(image_seq))
-
-            # Extract single tensor
+            # Perform preprocessing on single image
             image_stack = np.zeros(shape=(0, 128, 416, 9))
+            seg_stack = np.zeros(shape=(0, 128, 416, 9))
+            intrinsic_mat = np.zeros(shape=(0, self.num_scales, 3, 3))
+            intrinsic_mat_inv = np.zeros(shape=(0, self.num_scales, 3, 3))
+            camera_mat = tf.dtypes.cast([[480, 0, 270], [0, 480, 480], [0, 0, 1]], dtype = tf.float32)
             for i in range(image_seq.shape[0]):
-                tensor = tf.reshape(tf.slice(image_seq, [i, 0, 0, 0], [1, -1, -1, -1]), shape=[128, 1248, 3])
-                image = tf.reshape(self.unpack_images(tensor), shape=[1, 128, 416, 9])
-                print("image shape: {}:".format(np.shape(image)))
+
+                # Extract image as a tensor
+                img_tensor = tf.reshape(tf.slice(image_seq, [i, 0, 0, 0], [1, -1, -1, -1]), shape=[128, 1248, 3])
+                seg_tensor = tf.reshape(tf.slice(seg_seq, [i, 0, 0, 0], [1, -1, -1, -1]), shape=[128, 1248, 3])
+
+
+                # Convert to float32
+                img_tensor = tf.dtypes.cast(img_tensor, dtype=tf.float32)
+                seg_tensor = tf.dtypes.cast(seg_tensor, dtype=tf.float32)
+
+
+                # Randomly augment colorspace
+                if self.random_color:
+                    with tf.name_scope('image_augmentation'):
+                        img_tensor = self.augment_image_colorspace(img_tensor)
+
+                # if self.flipping_mode != FLIP_NONE:
+                #   random_flipping = (self.flipping_mode == FLIP_RANDOM)
+                #   with tf.name_scope('image_augmentation_flip'):
+                #     image_stack, seg_stack, intrinsics = self.augment_images_flip(
+                #         image_stack, seg_stack, intrinsics,
+                #         randomized=random_flipping)
+                #
+                # if self.random_scale_crop:
+                #   with tf.name_scope('image_augmentation_scale_crop'):
+                #     image_stack, seg_stack, intrinsics = self.augment_images_scale_crop(
+                #         image_stack, seg_stack, intrinsics, self.img_height,
+                #         self.img_width)
+
+                with tf.name_scope('multi_scale_intrinsics'):
+                    intrinsics = self.get_multi_scale_intrinsics(camera_mat,
+                                                                    self.num_scales)
+                    intrinsics.set_shape([self.num_scales, 3, 3])
+                    intrinsics_inv = tf.matrix_inverse(intrinsics)
+                    intrinsics_inv.set_shape([self.num_scales, 3, 3])
+
+                # Convert from wide image to stacked images
+                image = tf.reshape(self.unpack_images(img_tensor), shape=[1, 128, 416, 9])
+                seg = tf.reshape(self.unpack_images(seg_tensor), shape=[1, 128, 416, 9])
+                intrinsics = tf.reshape(intrinsics, shape=[1, self.num_scales, 3, 3])
+                intrinsics_inv = tf.reshape(intrinsics_inv, shape=[1, self.num_scales, 3, 3])
+
+
+                # Add to image stack
                 image_stack = tf.concat([image_stack, image], axis=0)
-                # image_stack = self.unpack_images(image_seq)
+                seg_stack = tf.concat([seg_stack, seg], axis=0)
+                intrinsic_mat = tf.concat([intrinsic_mat, intrinsics], axis=0)
+                intrinsic_mat_inv = tf.concat([intrinsic_mat_inv, intrinsics_inv], axis=0)
+
 
             print("Unpacked!")
             print("image stack shape: {}".format(np.shape(image_stack)))
+            print("seg stack shape: {}".format(np.shape(seg_stack)))
+            print("intrinsics stack shape: {}".format(np.shape(intrinsic_mat)))
+            print("intrinsics inv stack shape: {}".format(np.shape(intrinsic_mat_inv)))
 
-            # Convert to float32
-            image_stack = tf.dtypes.cast(image_stack, dtype=tf.float32)
-
-            # Create a dataset
-            img_dataset = tf.data.Dataset.from_tensor_slices(image_stack)
-            print("dataset shape: {}".format(img_dataset.output_shapes))
-            # print("dataset type: {}".format(img_dataset.output_types))
-            # print(type(img_dataset))
-            # seg_stack = self.unpack_images(seg_seq)
-
-
-            # if self.flipping_mode != FLIP_NONE:
-            #   random_flipping = (self.flipping_mode == FLIP_RANDOM)
-            #   with tf.name_scope('image_augmentation_flip'):
-            #     image_stack, seg_stack, intrinsics = self.augment_images_flip(
-            #         image_stack, seg_stack, intrinsics,
-            #         randomized=random_flipping)
-
-            # if self.random_scale_crop:
-            #   with tf.name_scope('image_augmentation_scale_crop'):
-            #     image_stack, seg_stack, intrinsics = self.augment_images_scale_crop(
-            #         image_stack, seg_stack, intrinsics, self.img_height,
-            #         self.img_width)
-
-            # with tf.name_scope('multi_scale_intrinsics'):
-            #   intrinsic_mat = self.get_multi_scale_intrinsics(intrinsics,
-            #                                                   self.num_scales)
-            #   intrinsic_mat.set_shape([self.num_scales, 3, 3])
-            #   intrinsic_mat_inv = tf.matrix_inverse(intrinsic_mat)
-            #   intrinsic_mat_inv.set_shape([self.num_scales, 3, 3])
 
             # For now, have dummy camera matrix values until image sequence is correct
-            intrinsic_mat = []
-            intrinsic_mat_inv = []
+            # intrinsic_mat = []
+            # intrinsic_mat_inv = []
 
             if self.imagenet_norm:
                 im_mean = tf.tile(
@@ -269,6 +294,12 @@ class DataReader(object):
                 image_stack_norm = (image_stack - im_mean) / im_sd
             else:
                 image_stack_norm = image_stack
+
+                # Create a dataset
+                img_dataset = tf.data.Dataset.from_tensor_slices(image_stack)
+                seg_dataset = tf.data.Dataset.from_tensor_slices(seg_stack)
+                cam_dataset = tf.data.Dataset.from_tensor_slices(intrinsics)
+                print("dataset shape: {}".format(img_dataset.output_shapes))
 
             ''' Consider changing to tf.data.Dataset.batch b/c deprecated'''
             with tf.name_scope('batching'):
@@ -288,6 +319,7 @@ class DataReader(object):
                         batch_size=self.batch_size,
                         num_threads=1,
                         capacity=QUEUE_SIZE + QUEUE_BUFFER * self.batch_size)
+                print("Batched: {}".format(self.batch_size))
                 logging.info('image_stack: %s', util.info(image_stack))
         return (image_stack, image_stack_norm, seg_stack, intrinsic_mat,
                 intrinsic_mat_inv)

@@ -34,11 +34,40 @@ isaac_app(
 
 py_binary(
     name = "train",
-    srcs = ["train.py"],
+    srcs = ["train.py",
+            "pinhole_to_tensor.py"],
     data = [
+        "pinhole_to_tensor.config.json",
+        "pinhole_to_tensor.graph.json",
         ":base_control.graph.json",
         ":carter.config.json",
         ":carter.graph.json",
+        ":navigation.config.json",
+        ":navigation.graph.json",
+        "//apps:py_init",
+        "//messages:core_messages",
+        "//apps/assets/maps",
+        "//packages/flatsim:libflatsim_module.so",
+        "//packages/map:libmap_module.so",
+        "//packages/ml:libml_module.so",
+        "//packages/navigation:libnavigation_module.so",
+        "//packages/perception:libperception_module.so",
+        "//packages/planner:libplanner_module.so",
+        "//packages/viewers:libviewers_module.so",
+    ],
+    deps = [
+        "//engine/pyalice",
+        "//packages/ml:pyml",
+    ],
+)
+
+py_binary(
+    name = "save_image_triplets",
+    srcs = ["save_image_triplets.py"],
+    data = [
+        ":base_control.graph.json",
+        ":carter_save.config.json",
+        ":carter_save.graph.json",
         ":navigation.config.json",
         ":navigation.graph.json",
         "//apps/assets/maps",
@@ -49,6 +78,51 @@ py_binary(
         "//packages/perception:libperception_module.so",
         "//packages/planner:libplanner_module.so",
         "//packages/viewers:libviewers_module.so",
+    ],
+    deps = [
+        "//engine/pyalice",
+        "//packages/ml:pyml",
+    ],
+)
+
+py_binary(
+    name = "save_images",
+    srcs = ["save_images.py"],
+    data = [
+        ":base_control.graph.json",
+        ":carter_save.config.json",
+        ":carter_save.graph.json",
+        ":navigation.config.json",
+        ":navigation.graph.json",
+        "//apps/assets/maps",
+        "//packages/flatsim:libflatsim_module.so",
+        "//packages/map:libmap_module.so",
+        "//packages/ml:libml_module.so",
+        "//packages/navigation:libnavigation_module.so",
+        "//packages/perception:libperception_module.so",
+        "//packages/planner:libplanner_module.so",
+        "//packages/viewers:libviewers_module.so",
+    ],
+    deps = [
+        "//engine/pyalice",
+        "//packages/ml:pyml",
+    ],
+)
+
+py_binary(
+    name = "pinhole_to_tensor",
+    srcs = [
+        "__init__.py",
+        "pinhole_to_tensor.py",
+    ],
+    data = [
+        "pinhole_to_tensor.config.json",
+        "pinhole_to_tensor.graph.json",
+        ":carter.config.json",
+        ":carter.graph.json",
+        "//apps:py_init",
+        "//messages:core_messages",
+        "//packages/ml:libml_module.so",
     ],
     deps = [
         "//engine/pyalice",

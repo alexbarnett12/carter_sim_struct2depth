@@ -176,6 +176,7 @@ class Model(object):
     """Invokes depth and ego-motion networks and computes clouds if needed."""
     (self.image_stack, self.image_stack_norm, self.seg_stack,
      self.intrinsic_mat, self.intrinsic_mat_inv) = self.reader.read_data()
+    print("Data Read!")
     with tf.variable_scope('depth_prediction'):
       # Organized by ...[i][scale].  Note that the order is flipped in
       # variables in build_loss() below.
