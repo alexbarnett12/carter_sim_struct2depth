@@ -27,6 +27,7 @@ class MaskGenerator:
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
         session = tf.InteractiveSession(config=config)
+        # self.graph = tf.Graph()
 
         # Download COCO trained weights from Releases if needed
         if not os.path.exists(COCO_MODEL_PATH):
@@ -42,10 +43,12 @@ class MaskGenerator:
         self.config.display()
 
         # Create model object in inference mode.
+        # with self.graph.as_default():
         self.model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=self.config)
 
-        # Load weights trained on MS-COCO
+            # Load weights trained on MS-COCO
         self.model.load_weights(COCO_MODEL_PATH, by_name=True)
+        self.model.keras_model._make_predict_function()
 
         # COCO Class names
         # Index of the class in the list is its ID. For example, to get ID of
@@ -77,6 +80,7 @@ class MaskGenerator:
     # Run detection
     def detect(self, image):
         self.image = image
+        # with self.graph.as_default():
         self.results = self.model.detect([image], verbose=1)
         self.results = self.results[0]
         return self.results

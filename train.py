@@ -36,6 +36,11 @@ from struct2depth import nets
 from struct2depth import reader
 from struct2depth import util
 
+# Isaac SDK
+from engine.pyalice import *
+import packages.ml
+from pinhole_to_tensor import PinholeToTensor
+
 gfile = tf.gfile
 MAX_TO_KEEP = 1000000  # Maximum number of checkpoints to keep.
 
@@ -162,41 +167,68 @@ def main(_):
     if not gfile.Exists(FLAGS.checkpoint_dir):
         gfile.MakeDirs(FLAGS.checkpoint_dir)
 
-    train_model = model.Model(data_dir=FLAGS.data_dir,
-                              file_extension=FLAGS.file_extension,
-                              is_training=True,
-                              learning_rate=FLAGS.learning_rate,
-                              beta1=FLAGS.beta1,
-                              reconstr_weight=FLAGS.reconstr_weight,
-                              smooth_weight=FLAGS.smooth_weight,
-                              ssim_weight=FLAGS.ssim_weight,
-                              icp_weight=FLAGS.icp_weight,
-                              batch_size=FLAGS.batch_size,
-                              img_height=FLAGS.img_height,
-                              img_width=FLAGS.img_width,
-                              seq_length=FLAGS.seq_length,
-                              architecture=FLAGS.architecture,
-                              imagenet_norm=FLAGS.imagenet_norm,
-                              weight_reg=FLAGS.weight_reg,
-                              exhaustive_mode=FLAGS.exhaustive_mode,
-                              random_scale_crop=FLAGS.random_scale_crop,
-                              flipping_mode=FLAGS.flipping_mode,
-                              depth_upsampling=FLAGS.depth_upsampling,
-                              depth_normalization=FLAGS.depth_normalization,
-                              compute_minimum_loss=FLAGS.compute_minimum_loss,
-                              use_skip=FLAGS.use_skip,
-                              joint_encoder=FLAGS.joint_encoder,
-                              handle_motion=FLAGS.handle_motion,
-                              equal_weighting=FLAGS.equal_weighting,
-                              size_constraint_weight=FLAGS.size_constraint_weight)
+    # Create Isaac application.
+    isaac_app = Application(name="carter_sim", modules=["map",
+                                                  "navigation",
+                                                  "perception",
+                                                  "planner",
+                                                  "viewers",
+                                                  "flatsim",
+                                                  "//packages/ml:ml"])
 
-    train(train_model, FLAGS.pretrained_ckpt, FLAGS.imagenet_ckpt,
-          FLAGS.checkpoint_dir, FLAGS.train_steps, FLAGS.summary_freq)
+    # Load config files
+    isaac_app.load_config(FLAGS.config_filename)
+    isaac_app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
+    isaac_app.load_config("apps/assets/maps/carter_warehouse_p.config.json")
+
+    # Load graph files
+    isaac_app.load_graph(FLAGS.graph_filename)
+    isaac_app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
+    isaac_app.load_graph("apps/assets/maps/carter_warehouse_p.graph.json")
+    isaac_app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
+
+    # Register custom Isaac codelets
+    isaac_app.register({"pinhole_to_tensor": PinholeToTensor})
+
+    g1 = tf.Graph()
+    with g1.as_default():
+        train_model = model.Model(data_dir=FLAGS.data_dir,
+                                  file_extension=FLAGS.file_extension,
+                                  is_training=True,
+                                  learning_rate=FLAGS.learning_rate,
+                                  beta1=FLAGS.beta1,
+                                  reconstr_weight=FLAGS.reconstr_weight,
+                                  smooth_weight=FLAGS.smooth_weight,
+                                  ssim_weight=FLAGS.ssim_weight,
+                                  icp_weight=FLAGS.icp_weight,
+                                  batch_size=FLAGS.batch_size,
+                                  img_height=FLAGS.img_height,
+                                  img_width=FLAGS.img_width,
+                                  seq_length=FLAGS.seq_length,
+                                  architecture=FLAGS.architecture,
+                                  imagenet_norm=FLAGS.imagenet_norm,
+                                  weight_reg=FLAGS.weight_reg,
+                                  exhaustive_mode=FLAGS.exhaustive_mode,
+                                  random_scale_crop=FLAGS.random_scale_crop,
+                                  flipping_mode=FLAGS.flipping_mode,
+                                  depth_upsampling=FLAGS.depth_upsampling,
+                                  depth_normalization=FLAGS.depth_normalization,
+                                  compute_minimum_loss=FLAGS.compute_minimum_loss,
+                                  use_skip=FLAGS.use_skip,
+                                  joint_encoder=FLAGS.joint_encoder,
+                                  handle_motion=FLAGS.handle_motion,
+                                  equal_weighting=FLAGS.equal_weighting,
+                                  size_constraint_weight=FLAGS.size_constraint_weight,
+                                  isaac_app=isaac_app)
+
+        train(train_model, FLAGS.pretrained_ckpt, FLAGS.imagenet_ckpt,
+              FLAGS.checkpoint_dir, FLAGS.train_steps, FLAGS.summary_freq)
 
 
 def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
           train_steps, summary_freq):
     """Train model."""
+
     vars_to_restore = None
     if pretrained_ckpt is not None:
         vars_to_restore = util.get_vars_to_save_and_restore(pretrained_ckpt)
@@ -229,17 +261,20 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
         steps_per_epoch = train_model.reader.steps_per_epoch
         step = 1
         while step <= train_steps:
+            print('fetching!')
             fetches = {
                 'train': train_model.train_op,
                 'global_step': train_model.global_step,
                 'incr_global_step': train_model.incr_global_step
             }
+            print('fetched!')
             if step % summary_freq == 0:
                 fetches['loss'] = train_model.total_loss
                 fetches['summary'] = sv.summary_op
 
             results = sess.run(fetches)
             global_step = results['global_step']
+            print('results!')
 
             if step % summary_freq == 0:
                 sv.summary_writer.add_summary(results['summary'], global_step)

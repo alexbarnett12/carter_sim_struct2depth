@@ -51,17 +51,16 @@ class ImageProcessor:
         # Define list of seg_mask images
         seg_list = []
 
-        for img in images:
-
-            seg_list.append(self.create_mask(img))
+        # for img in images:
+        #     seg_list.append(self.create_mask(img))
 
         # Align seg_masks
-        seg_list[0], seg_list[1], seg_list[2] = align(seg_list[0], seg_list[1], seg_list[2])
+        # seg_list[0], seg_list[1], seg_list[2] = align(seg_list[0], seg_list[1], seg_list[2])
         big_seg_img = np.zeros(shape=(HEIGHT, WIDTH*SEQ_LENGTH, 3))
 
         # Create seg_mask triplet
-        for k in range(0, 3):
-            big_seg_img[:, k * WIDTH:(k + 1) * WIDTH] = seg_list[k]
+        # for k in range(0, 3):
+        #     big_seg_img[:, k * WIDTH:(k + 1) * WIDTH] = seg_list[k]
 
         return big_seg_img
 

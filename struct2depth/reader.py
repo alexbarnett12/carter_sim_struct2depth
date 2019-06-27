@@ -49,17 +49,25 @@ sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 import packages.ml
 from pinhole_to_tensor import PinholeToTensor
-import capnp
 
 # Op names.
-COLOR_IMAGE_NAME = 'rgb_image'
-LABEL_IMAGE_NAME = 'sgementation_label'
+COLOR_IMAGE = 'image'
+SEG_MASK = 'segmentation_mask'
+CAMERA_MAT = 'camera_matrix'
+INTRINSICS = 'camera_matrix'
+INTRINSICS_INV = 'camera_matrix_inverse'
+IMAGE_NORM = 'imagenet_norm'
+SEQ_LENGTH = 3
+HEIGHT = 128
+WIDTH = 416
+TRIPLET_WIDTH = WIDTH * SEQ_LENGTH
+
 INPUT_NAME = 'input'
 OUTPUT_NAME = 'output'
 STEPSIZE = 1
 
 # Number of samples to acquire in batch
-kSampleNumbers = 5
+kSampleNumbers = 3
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -69,54 +77,12 @@ flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter.conf
                     'Where the isaac SDK app node configuration is stored')
 
 
-def get_generator(bridge):
-    """Create a training sample generator.
-
-    Args:
-      bridge: the isaac sample accumulator node which we will acquire samples from
-
-    Returns:
-      A generator function which yields a single training example.
-  """
-
-    def _generator():
-        # Indefinitely yield samples.
-        while True:
-            # Try to acquire a sample.
-            # If none are available, then wait for a bit so we do not spam the app.
-            sample = bridge.acquire_samples(kSampleNumbers)
-            if not sample:
-                time.sleep(1)
-                continue
-
-            # Return nparray of image
-            yield sample[0]
-
-    return _generator
-
-
-def get_dataset(bridge, batch_size):
-    """Create a tf.data dataset which yields batches of samples for training.
-
-  Args:
-      bridge: the isaac sample accumulator node which we will acquire samples from
-
-  Returns:
-    A tf.data dataset which yields batches of training examples.
-  """
-    dataset = tf.data.Dataset.from_generator(get_generator(bridge),
-                                             tf.float32,
-                                             (None, None, 3)).batch(batch_size)
-
-    return dataset
-
-
 class DataReader(object):
     """Reads stored sequences which are produced by dataset/gen_data.py."""
 
     def __init__(self, data_dir, batch_size, img_height, img_width, seq_length,
                  num_scales, file_extension, random_scale_crop, flipping_mode,
-                 random_color, imagenet_norm, shuffle, input_file='train'):
+                 random_color, imagenet_norm, shuffle, input_file='train', isaac_app=None):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.img_height = img_height
@@ -130,199 +96,288 @@ class DataReader(object):
         self.imagenet_norm = imagenet_norm
         self.shuffle = shuffle
         self.input_file = input_file
+        self.isaac_app = isaac_app
+        self.steps_per_epoch = 500
 
-    def read_data(self):
-        """Provides images and camera intrinsics."""
-        with tf.name_scope('data_loading'):
-            with tf.name_scope('enqueue_paths'):
 
-                '''Isaac SDK code'''
-                # # Create the application.
-                app = Application(name="carter_sim", modules=["map",
-                                                              "navigation",
-                                                              "perception",
-                                                              "planner",
-                                                              "viewers",
-                                                              "flatsim",
-                                                              "//packages/ml:ml"])
+    def get_generator(self, bridge, img_processor):
+        """Create a training sample generator.
 
-                app.load_config(FLAGS.config_filename)
-                app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
-                app.load_config("apps/assets/maps/carter_warehouse_p.config.json")
-                app.load_graph(FLAGS.graph_filename)
-                app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
-                app.load_graph("apps/assets/maps/carter_warehouse_p.graph.json")
-                app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
-                app.register({"pinhole_to_tensor": PinholeToTensor})
+        Args:
+          bridge: the isaac sample accumulator node which we will acquire samples from
 
-                # Startup the bridge to get data.
-                node = app.find_node_by_name("CarterTrainingSamples")
-                bridge = packages.ml.SampleAccumulator(node)
-                app.start_webserver()
-                app.start()
+        Returns:
+          A generator function which yields a single training example.
+      """
 
-                # Retrieve rgb images from isaac sim
-                # First wait until we get enough samples
+        def _generator():
+            # Indefinitely yield samples.
+            while True:
+
+                # Wait until we get enough samples from Isaac
                 while True:
                     num = bridge.get_sample_number()
                     if num >= kSampleNumbers:
                         break
                     time.sleep(1.0)
-                    print("waiting for samples: {}".format(num))
-                print("{} Samples acquired".format(num))
+                    # logging.info("waiting for enough samples: {}".format(num))
 
-                images = bridge.acquire_samples(kSampleNumbers)
-                # cv2.imwrite('messigray.png', np.array(images[0][0]))
-                # print(np.shape(images))
-                # print(np.shape(images[0][0]))
-                # print(images[0][0])
-                # cv2.imshow('image', np.array(images[0][0]) / 255.)
-                # k = cv2.waitKey(0)
-                # if k == 27:  # wait for ESC key to exit
-                #     cv2.destroyAllWindows()
-                # elif k == ord('s'):  # wait for 's' key to save and exit
-                #     cv2.imwrite('messigray.png', big_img)
-                #     cv2.destroyAllWindows()
+                # Try to acquire a sample.
+                # If none are available, then wait for a bit so we do not spam the app.
+                sample = bridge.acquire_samples(kSampleNumbers)
+                if not sample:
+                    time.sleep(1)
+                    continue
+
+                # print(np.shape(sample))
 
                 # Create wide image and segmentation triplets
-                image_seq = []
-                seg_seq = []
-                img_processor = ImageProcessor()
-                for i in range(0, kSampleNumbers - 2):
-                    big_img, big_seg_img = img_processor.process_image(np.array([images[i][0],
-                                                                   images[i + 1][0],
-                                                                   images[i + 2][0]]))
+                # TODO: Turn seg mask generator into an Isaac node
+                # TODO: Fix MRCNN to work within another tf.Graph()
+                image_seq, seg_mask_seq = img_processor.process_image(np.array([sample[0][0],
+                                                                              sample[1][0],
+                                                                              sample[2][0]]))
 
-                    # Add images and seg masks to sequences
-                    image_seq.append(big_img)
-                    seg_seq.append(big_seg_img)
+                # TODO: Retrieve camera mat from Isaac
+                intrinsics = np.array([[480, 0, 270], [0, 480, 480], [0, 0, 1]], dtype=np.float32)
 
-                # Convert to arrays
-                image_seq = np.asarray(image_seq)
-                seg_seq = np.asarray(seg_seq)
-                # cv2.imshow('image', big_img)
-                # k = cv2.waitKey(0)
-                # if k == 27:  # wait for ESC key to exit
-                #     cv2.destroyAllWindows()
-                # elif k == ord('s'):  # wait for 's' key to save and exit
-                #     cv2.imwrite('messigray.png', big_img)
-                #     cv2.destroyAllWindows()
+                # print(np.shape(image_seq))
+                # print(np.shape(seg_mask_seq))
+                # print(np.shape(intrinsics))
 
-            # with tf.name_scope('load_intrinsics'):
-            #   cam_reader = tf.TextLineReader()
-            #   _, raw_cam_contents = cam_reader.read(cam_paths_queue)
-            #   rec_def = []
-            #   for _ in range(9):
-            #     rec_def.append([1.0])
-            #   raw_cam_vec = tf.decode_csv(raw_cam_contents, record_defaults=rec_def)
-            #   raw_cam_vec = tf.stack(raw_cam_vec)
-            #   intrinsics = tf.reshape(raw_cam_vec, [3, 3])
-
-            # Perform preprocessing on single image
-            image_stack = np.zeros(shape=(0, 128, 416, 9))
-            seg_stack = np.zeros(shape=(0, 128, 416, 9))
-            intrinsic_mat = np.zeros(shape=(0, self.num_scales, 3, 3))
-            intrinsic_mat_inv = np.zeros(shape=(0, self.num_scales, 3, 3))
-            camera_mat = tf.dtypes.cast([[480, 0, 270], [0, 480, 480], [0, 0, 1]], dtype = tf.float32)
-            for i in range(image_seq.shape[0]):
-
-                # Extract image as a tensor
-                img_tensor = tf.reshape(tf.slice(image_seq, [i, 0, 0, 0], [1, -1, -1, -1]), shape=[128, 1248, 3])
-                seg_tensor = tf.reshape(tf.slice(seg_seq, [i, 0, 0, 0], [1, -1, -1, -1]), shape=[128, 1248, 3])
-
-
-                # Convert to float32
-                img_tensor = tf.dtypes.cast(img_tensor, dtype=tf.float32)
-                seg_tensor = tf.dtypes.cast(seg_tensor, dtype=tf.float32)
-
-
-                # Randomly augment colorspace
-                if self.random_color:
-                    with tf.name_scope('image_augmentation'):
-                        img_tensor = self.augment_image_colorspace(img_tensor)
-
-                # if self.flipping_mode != FLIP_NONE:
-                #   random_flipping = (self.flipping_mode == FLIP_RANDOM)
-                #   with tf.name_scope('image_augmentation_flip'):
-                #     image_stack, seg_stack, intrinsics = self.augment_images_flip(
-                #         image_stack, seg_stack, intrinsics,
-                #         randomized=random_flipping)
+                # with tf.name_scope('preprocessing'):
                 #
-                # if self.random_scale_crop:
-                #   with tf.name_scope('image_augmentation_scale_crop'):
-                #     image_stack, seg_stack, intrinsics = self.augment_images_scale_crop(
-                #         image_stack, seg_stack, intrinsics, self.img_height,
-                #         self.img_width)
+                #     # Convert from uint8 to float32 (if necessary)
+                #     # image_seq = self.preprocess_image(image_seq)
+                #     # seg_mask_seq = self.preprocess_image(seg_mask_seq)
+                #     # intrinsics = tf.dtypes.cast(intrinsics, dtype=tf.float32)
+                #     # print("Converted to float32")
+                #
+                #     # Randomly augment colorspace
+                #     if self.random_color:
+                #         with tf.name_scope('image_augmentation'):
+                #             image = self.augment_image_colorspace(image_seq)
+                #         logging.info("Image successfully augmented")
+                #
+                #     print(tf.shape(image_seq))
+                #     print(tf.shape(seg_mask_seq))
+                #     print(tf.shape(intrinsics))
+                #
+                #     # Unpack wide images into three stacked images
+                #     image_stack = self.unpack_images(image_seq)
+                #     seg_stack = self.unpack_images(seg_mask_seq)
+                #     logging.info("Images unpacked")
+                #
+                #     # Randomly flip images
+                #     if self.flipping_mode != FLIP_NONE:
+                #         random_flipping = (self.flipping_mode == FLIP_RANDOM)
+                #         with tf.name_scope('image_augmentation_flip'):
+                #             image_stack, seg_stack, intrinsics = self.augment_images_flip(
+                #                 image_stack, seg_stack, intrinsics,
+                #                 randomized=random_flipping)
+                #             logging.info("Images flipped")
+                #
+                #     # Randomly scale and crop images
+                #     if self.random_scale_crop:
+                #         with tf.name_scope('image_augmentation_scale_crop'):
+                #             image_stack, seg_stack, intrinsics = self.augment_images_scale_crop(
+                #                 image_stack, seg_stack, intrinsics, self.img_height,
+                #                 self.img_width)
+                #         logging.info("Images scaled and cropped")
+                #
+                #     # Adjust camera intrinsics to the correct scale and compute the inverse
+                #     with tf.name_scope('multi_scale_intrinsics'):
+                #         intrinsics = self.get_multi_scale_intrinsics(intrinsics,
+                #                                                      self.num_scales)
+                #         intrinsics.set_shape([self.num_scales, 3, 3])
+                #         intrinsics_inv = tf.matrix_inverse(intrinsics)
+                #         intrinsics_inv.set_shape([self.num_scales, 3, 3])
+                #         logging.info("Multi scale intrinsics received")
+                #
+                #     # Subtract Imagenet norm
+                #     if self.imagenet_norm:
+                #         im_mean = tf.tile(
+                #             tf.constant(IMAGENET_MEAN), multiples=[self.seq_length])
+                #         im_sd = tf.tile(
+                #             tf.constant(IMAGENET_SD), multiples=[self.seq_length])
+                #         image_stack_norm = (image_stack - im_mean) / im_sd
+                #         logging.info("Imagenet norm used")
+                #     else:
+                #         image_stack_norm = image_stack
+                #         logging.info("Imagenet norm not used")
 
-                with tf.name_scope('multi_scale_intrinsics'):
-                    intrinsics = self.get_multi_scale_intrinsics(camera_mat,
-                                                                    self.num_scales)
-                    intrinsics.set_shape([self.num_scales, 3, 3])
-                    intrinsics_inv = tf.matrix_inverse(intrinsics)
-                    intrinsics_inv.set_shape([self.num_scales, 3, 3])
+                # Return nparray of image
+                # yield {COLOR_IMAGE: image_stack,
+                #        IMAGE_NORM: image_stack_norm,
+                #        SEG_MASK: seg_stack,
+                #        INTRINSICS: intrinsics,
+                #        INTRINSICS_INV: intrinsics_inv}
+                yield {COLOR_IMAGE: image_seq,
+                       SEG_MASK: seg_mask_seq,
+                       INTRINSICS: intrinsics}
 
-                # Convert from wide image to stacked images
-                image = tf.reshape(self.unpack_images(img_tensor), shape=[1, 128, 416, 9])
-                seg = tf.reshape(self.unpack_images(seg_tensor), shape=[1, 128, 416, 9])
-                intrinsics = tf.reshape(intrinsics, shape=[1, self.num_scales, 3, 3])
-                intrinsics_inv = tf.reshape(intrinsics_inv, shape=[1, self.num_scales, 3, 3])
+        return _generator
 
+    def get_dataset(self, bridge, batch_size, img_processor):
+        """Create a tf.data dataset which yields batches of samples for training.
 
-                # Add to image stack
-                image_stack = tf.concat([image_stack, image], axis=0)
-                seg_stack = tf.concat([seg_stack, seg], axis=0)
-                intrinsic_mat = tf.concat([intrinsic_mat, intrinsics], axis=0)
-                intrinsic_mat_inv = tf.concat([intrinsic_mat_inv, intrinsics_inv], axis=0)
+      Args:
+          bridge: the isaac sample accumulator node which we will acquire samples from
 
+      Returns:
+        A tf.data dataset which yields batches of training examples.
+      """
 
-            print("Unpacked!")
-            print("image stack shape: {}".format(np.shape(image_stack)))
-            print("seg stack shape: {}".format(np.shape(seg_stack)))
-            print("intrinsics stack shape: {}".format(np.shape(intrinsic_mat)))
-            print("intrinsics inv stack shape: {}".format(np.shape(intrinsic_mat_inv)))
+        dataset = tf.data.Dataset.from_generator(
+            self.get_generator(bridge, img_processor), {
+                COLOR_IMAGE: tf.float32,
+                SEG_MASK: tf.uint8,
+                INTRINSICS: tf.float32,
+            }, {
+                COLOR_IMAGE: (None, None, 3),
+                SEG_MASK: (None, None, 3),
+                INTRINSICS: (3, 3),
+            })
 
+        return dataset
 
-            # For now, have dummy camera matrix values until image sequence is correct
-            # intrinsic_mat = []
-            # intrinsic_mat_inv = []
+    def read_data(self):
+        """Provides images and camera intrinsics."""
+        with tf.name_scope('data_loading'):
 
+            # Startup the sample accumulator bridge to get data
+            node = self.isaac_app.find_node_by_name("CarterTrainingSamples")
+            bridge = packages.ml.SampleAccumulator(node)
+
+            # Start the application and Sight server
+            self.isaac_app.start_webserver()
+            self.isaac_app.start()
+            logging.info("Isaac application loaded")
+
+            # Create image processor for generating triplets and seg masks
+            img_processor = ImageProcessor()
+            logging.info("Image Processor created")
+
+            # Create a Dataset and iterator from Isaac generator
+            dataset = self.get_dataset(bridge, self.batch_size, img_processor)
+            data_dict = dataset.make_one_shot_iterator().get_next()
+            logging.info("Dataset from generator created")
+            print("Dataset: {}".format(dataset))
+
+            # Extract image, seg mask, and camera matrix
+            image_seq = data_dict[COLOR_IMAGE]
+            # image_stack_norm = data_dict[IMAGE_NORM]
+            seg_mask_seq = data_dict[SEG_MASK]
+            intrinsics = data_dict[INTRINSICS]
+            # intrinsics_inv = data_dict[INTRINSICS_INV]
+            logging.info("Dictionary elements extracted")
+
+            print("Dataset: {}".format(dataset))
+            print("Image dataset: {}".format(image_seq))
+            print("Seg mask dataset: {}".format(seg_mask_seq))
+            print("Intrinsics dataset: {}".format(intrinsics))
+
+            # Resize images to network input size
+            image_seq = tf.image.resize_images(data_dict[COLOR_IMAGE], (HEIGHT, TRIPLET_WIDTH))
+            seg_mask_seq = tf.dtypes.cast(tf.image.resize_images(data_dict[SEG_MASK], (HEIGHT, TRIPLET_WIDTH)), np.uint8)
+            print("Resized image dataset: {}".format(image_seq))
+            print("Resized seg mask dataset: {}".format(seg_mask_seq))
+            print("Dataset after resize: {}".format(dataset))
+
+        with tf.name_scope('preprocessing'):
+
+            # Randomly augment colorspace
+            if self.random_color:
+                with tf.name_scope('image_augmentation'):
+                    image = self.augment_image_colorspace(image_seq)
+                logging.info("Image successfully augmented")
+            print("Image dataset: {}".format(image_seq))
+            print("Seg mask dataset: {}".format(seg_mask_seq))
+            print("Intrinsics dataset: {}".format(intrinsics))
+
+            # Unpack wide images into three stacked images
+            image_stack = self.unpack_images(image_seq)
+            seg_stack = self.unpack_images(seg_mask_seq)
+            logging.info("Images unpacked")
+            print("Image dataset: {}".format(image_stack))
+            print("Seg mask dataset: {}".format(seg_stack))
+            print("Intrinsics dataset: {}".format(intrinsics))
+
+            # Randomly flip images
+            if self.flipping_mode != FLIP_NONE:
+                random_flipping = (self.flipping_mode == FLIP_RANDOM)
+                with tf.name_scope('image_augmentation_flip'):
+                    image_stack, seg_stack, intrinsics = self.augment_images_flip(
+                        image_stack, seg_stack, intrinsics,
+                        randomized=random_flipping)
+                    logging.info("Images flipped")
+
+            # Randomly scale and crop images
+            if self.random_scale_crop:
+                with tf.name_scope('image_augmentation_scale_crop'):
+                    image_stack, seg_stack, intrinsics = self.augment_images_scale_crop(
+                        image_stack, seg_stack, intrinsics, self.img_height,
+                        self.img_width)
+                logging.info("Images scaled and cropped")
+
+            # Adjust camera intrinsics to the correct scale and compute the inverse
+            with tf.name_scope('multi_scale_intrinsics'):
+                intrinsics = self.get_multi_scale_intrinsics(intrinsics,
+                                                             self.num_scales)
+                intrinsics.set_shape([self.num_scales, 3, 3])
+                intrinsics_inv = tf.matrix_inverse(intrinsics)
+                intrinsics_inv.set_shape([self.num_scales, 3, 3])
+                logging.info("Multi scale intrinsics received")
+
+            # Subtract Imagenet norm
             if self.imagenet_norm:
                 im_mean = tf.tile(
                     tf.constant(IMAGENET_MEAN), multiples=[self.seq_length])
                 im_sd = tf.tile(
                     tf.constant(IMAGENET_SD), multiples=[self.seq_length])
                 image_stack_norm = (image_stack - im_mean) / im_sd
+                logging.info("Imagenet norm used")
             else:
                 image_stack_norm = image_stack
+                logging.info("Imagenet norm not used")
 
-                # Create a dataset
-                img_dataset = tf.data.Dataset.from_tensor_slices(image_stack)
-                seg_dataset = tf.data.Dataset.from_tensor_slices(seg_stack)
-                cam_dataset = tf.data.Dataset.from_tensor_slices(intrinsics)
-                print("dataset shape: {}".format(img_dataset.output_shapes))
+            # Wait until we get enough samples from Isaac
+            while True:
+                num = bridge.get_sample_number()
+                if num >= kSampleNumbers:
+                    break
+                time.sleep(1.0)
+                logging.info("waiting for enough samples: {}".format(num))
 
-            ''' Consider changing to tf.data.Dataset.batch b/c deprecated'''
-            with tf.name_scope('batching'):
-                if self.shuffle:
-                    (image_stack, image_stack_norm, seg_stack, intrinsic_mat,
-                     intrinsic_mat_inv) = tf.train.shuffle_batch(
-                        [image_stack, image_stack_norm, seg_stack, intrinsic_mat,
-                         intrinsic_mat_inv],
-                        batch_size=self.batch_size,
-                        capacity=QUEUE_SIZE + QUEUE_BUFFER * self.batch_size,
-                        min_after_dequeue=QUEUE_SIZE)
-                else:
-                    (image_stack, image_stack_norm, seg_stack, intrinsic_mat,
-                     intrinsic_mat_inv) = tf.train.batch(
-                        [image_stack, image_stack_norm, seg_stack, intrinsic_mat,
-                         intrinsic_mat_inv],
-                        batch_size=self.batch_size,
-                        num_threads=1,
-                        capacity=QUEUE_SIZE + QUEUE_BUFFER * self.batch_size)
-                print("Batched: {}".format(self.batch_size))
-                logging.info('image_stack: %s', util.info(image_stack))
-        return (image_stack, image_stack_norm, seg_stack, intrinsic_mat,
-                intrinsic_mat_inv)
+        with tf.name_scope('batching'):
+            if self.shuffle:
+                (image_stack, image_stack_norm, seg_stack, intrinsics,
+                 intrinsics_inv) = tf.train.shuffle_batch(
+                    [image_stack, image_stack_norm, seg_stack, intrinsics,
+                     intrinsics_inv],
+                    batch_size=self.batch_size,
+                    capacity=QUEUE_SIZE + QUEUE_BUFFER * self.batch_size,
+                    min_after_dequeue=QUEUE_SIZE)
+            else:
+                (image_stack, image_stack_norm, seg_stack, intrinsics,
+                 intrinsics_inv) = tf.train.batch(
+                    [image_stack, image_stack_norm, seg_stack, intrinsics,
+                     intrinsics_inv],
+                    batch_size=self.batch_size,
+                    capacity=QUEUE_SIZE + QUEUE_BUFFER * self.batch_size,
+                    min_after_dequeue=QUEUE_SIZE)
+
+            logging.info("Dataset successfuly processed")
+        logging.info("Final dimensional check")
+        print(dataset)
+        print("Image dataset: {}".format(image_stack))
+        print("Image norm: {}".format(image_stack_norm))
+        print("Seg mask dataset: {}".format(seg_stack))
+        print("Intrinsics dataset: {}".format(intrinsics))
+        print("Intrinsics inverse dataset: {}".format(intrinsics_inv))
+        return (image_stack, image_stack_norm, seg_stack, intrinsics,
+                intrinsics_inv)
+
 
     def unpack_images(self, image_seq):
         """[h, w * seq_length, 3] -> [h, w, 3 * seq_length]."""

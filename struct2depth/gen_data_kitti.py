@@ -24,6 +24,7 @@ import glob
 # Segmentation mask generation
 from .gen_masks_kitti import MaskGenerator
 from .alignment import align
+from .gen_train_txt import generate_train_txt
 
 SEQ_LENGTH = 3
 WIDTH = 416
@@ -159,6 +160,9 @@ for d in glob.glob(INPUT_DIR + '/*/'):
                 f.write(calib_representation)
                 f.close()
                 ct += 1
+
+# Generate train txt file
+generate_train_txt()
 
 
 def main(_):

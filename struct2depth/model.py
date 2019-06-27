@@ -70,7 +70,8 @@ class Model(object):
                handle_motion=False,
                equal_weighting=False,
                size_constraint_weight=0.0,
-               train_global_scale_var=True):
+               train_global_scale_var=True,
+               isaac_app=None):
     self.data_dir = data_dir
     self.file_extension = file_extension
     self.is_training = is_training
@@ -103,6 +104,7 @@ class Model(object):
     self.equal_weighting = equal_weighting
     self.size_constraint_weight = size_constraint_weight
     self.train_global_scale_var = train_global_scale_var
+    self.isaac_app = isaac_app
 
     logging.info('data_dir: %s', data_dir)
     logging.info('file_extension: %s', file_extension)
@@ -154,7 +156,8 @@ class Model(object):
                                       self.random_color,
                                       self.imagenet_norm,
                                       self.shuffle,
-                                      self.input_file)
+                                      self.input_file,
+                                      self.isaac_app)
       self.build_train_graph()
     else:
       self.build_depth_test_graph()
@@ -174,6 +177,7 @@ class Model(object):
 
   def build_inference_for_training(self):
     """Invokes depth and ego-motion networks and computes clouds if needed."""
+    logging.info("Reading data")
     (self.image_stack, self.image_stack_norm, self.seg_stack,
      self.intrinsic_mat, self.intrinsic_mat_inv) = self.reader.read_data()
     print("Data Read!")
