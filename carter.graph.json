@@ -113,6 +113,19 @@
       "name": "LeftDepthCameraViewer"
     },
     {
+      "name": "MonoDepthCameraViewer",
+      "components": [
+        {
+          "name": "isaac.alice.MessageLedger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.viewers.DepthCameraViewer",
+          "type": "isaac::viewers::DepthCameraViewer"
+        }
+      ]
+    },
+    {
       "components": [
         {
           "name": "isaac.alice.MessageLedger",
@@ -183,6 +196,19 @@
     },
     {
       "name": "pinhole_to_tensor",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.alice.PyCodelet",
+          "type": "isaac::alice::PyCodelet"
+        }
+      ]
+    },
+    {
+      "name": "monocular_depth_map",
       "components": [
         {
           "name": "message_ledger",
@@ -304,6 +330,14 @@
     {
       "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/ColorSensor",
       "target": "pinhole_to_tensor/isaac.alice.PyCodelet/rgb_image"
+    },
+    {
+      "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/ColorSensor",
+      "target": "monocular_depth_map/isaac.alice.PyCodelet/rgb_image"
+    },
+    {
+      "source": "monocular_depth_map/isaac.alice.PyCodelet/depth_map",
+      "target": "MonoDepthCameraViewer/isaac.viewers.DepthCameraViewer/depth_listener"
     },
     {
       "source": "LeftColorCameraEncoder/isaac.ml.ColorCameraEncoder/tensor",

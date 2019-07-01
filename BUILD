@@ -33,6 +33,36 @@ isaac_app(
 )
 
 py_binary(
+    name = "inference",
+    srcs = ["live_inference.py",
+            "pinhole_to_tensor.py",
+            "monocular_depth_map.py"],
+    data = [
+        "pinhole_to_tensor.config.json",
+        "pinhole_to_tensor.graph.json",
+        ":base_control.graph.json",
+        ":carter.config.json",
+        ":carter.graph.json",
+        ":navigation.config.json",
+        ":navigation.graph.json",
+        "//apps:py_init",
+        "//messages:core_messages",
+        "//apps/assets/maps",
+        "//packages/flatsim:libflatsim_module.so",
+        "//packages/map:libmap_module.so",
+        "//packages/ml:libml_module.so",
+        "//packages/navigation:libnavigation_module.so",
+        "//packages/perception:libperception_module.so",
+        "//packages/planner:libplanner_module.so",
+        "//packages/viewers:libviewers_module.so",
+    ],
+    deps = [
+        "//engine/pyalice",
+        "//packages/ml:pyml",
+    ],
+)
+
+py_binary(
     name = "train",
     srcs = ["train.py",
             "pinhole_to_tensor.py"],
