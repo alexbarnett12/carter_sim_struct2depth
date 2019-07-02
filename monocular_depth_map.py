@@ -67,6 +67,7 @@ class MonocularDepthMap(Codelet):
         cols = rgb_image_proto.cols
         channels = rgb_image_proto.channels
         image_buffer_id = rgb_image_proto.dataBufferIndex
+
         print("Element type: {}".format(element_type))
         print("Rows: {}".format(rows))
         print("Cols: {}".format(cols))
@@ -87,18 +88,6 @@ class MonocularDepthMap(Codelet):
 
         # Extract camera attributes
         pinhole = self.rx.get_proto().pinhole
-
-        # Extract pinhole camera attributes
-        focal_x = pinhole.focal.x
-        focal_y = pinhole.focal.y
-        center_x = pinhole.center.x
-        center_y = pinhole.center.y
-
-        # Create 3D camera matrix
-        camera_mat = [[int(focal_x), 0, int(center_x)],
-                      [0, int(focal_y), int(center_y)],
-                      [0, 0, 1]]
-        print("Camera intrinsics: {}".format(camera_mat))
 
         # Run inference
         est_depth = _run_inference(image,
@@ -121,6 +110,7 @@ class MonocularDepthMap(Codelet):
                                    inference_crop=INFERENCE_CROP,
                                    use_masks=USE_MASKS
                                    )
+
         print("Depth map shape: {}".format(np.shape(est_depth)))
         print("Depth min: {}".format(np.min(est_depth)))
         print("Depth max: {}".format(np.max(est_depth)))
@@ -131,15 +121,16 @@ class MonocularDepthMap(Codelet):
         depth_pinhole_proto = isaac_proto_tx("PinholeProto", "pinhole").init_proto()
 
         # Set image proto attributes
-        depth_image_proto.elementType = 'float32'  # Check syntax
+        depth_image_proto.elementType = 'float32'  # TODO: Check syntax
         depth_image_proto.rows = IMG_HEIGHT
         depth_image_proto.cols = IMG_WIDTH
         depth_image_proto.channels = 1
 
         # Serialize image
         depth_buffer = np.getbuffer(est_depth)
-        depth_image_proto.dataBufferIndex = len(depth_buffer)
-        depth_image_proto.set_buffer_content(depth_buffer)  # TODO: Find actual method
+        depth_image_proto.dataBufferIndex = depth_buffer
+        # depth_image_proto.dataBufferIndex = len(depth_buffer)
+        # depth_image_proto.set_buffer_content(depth_buffer)  # TODO: Find actual method
 
         # Set pinhole intrinsics
         depth_pinhole_proto.rows = IMG_HEIGHT
@@ -147,7 +138,7 @@ class MonocularDepthMap(Codelet):
         depth_pinhole_proto.focal = rgb_image_proto.focal # TODO: Check that these values are correct
         depth_pinhole_proto.center = rgb_image_proto.center
 
-        # Set depth camera viewer attributes
+        # Set depth camera proto
         depth_camera_viewer.depthImage = depth_image_proto
         depth_camera_viewer.minDepth = 0
         depth_camera_viewer.maxDepth = 1  # TODO: Find min and maxes

@@ -44,27 +44,25 @@ class PinholeToTensor(Codelet):
         # print(camera_mat)
 
         # Initialize TensorProto and TensorListProto for the camera matrix
-        tx_message = self.tx.init_proto()
-        tx_contents = self.tx_inner.init_proto()
+        tensor_list = self.tx.init_proto()
+        tensor = self.tx_inner.init_proto()
 
         # Set element type
-        tx_contents.elementType = 2
+        tensor.elementType = 'float32'
 
         # Set tensor dimensions
-        size = tx_contents.init('sizes', 2) # = [1, 9]
+        size = tensor.init('sizes', 2) # = [1, 9]
         size[0] = 9
         size[1] = 1
 
         # Add data to TensorProto
-        data = tx_contents.init('data',1)
-        # for i in range(len(camera_mat)):
-        #     data[i] = camera_mat[i] # ERROR HERE
+        tensor.data = np.getbuffer(camera_mat)
 
         # Create TensorList
-        tensor_list = tx_message.init('tensors', 1)
+        tensor_list = tensor_list.init('tensors', 1)
 
         # Add tensor to TensorListProto
-        tensor_list[0] = tx_contents
+        tensor_list[0] = tensor
 
         # Publish TensorListProto
         self.tx.publish()
