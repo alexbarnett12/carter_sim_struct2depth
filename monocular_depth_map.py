@@ -10,15 +10,19 @@ import fnmatch
 import tensorflow as tf
 from struct2depth import nets
 from struct2depth import util
+import cv2
 
 gfile = tf.gfile
 
+ROOT_DIR = os.path.abspath("/mnt/isaac")
+sys.path.append(ROOT_DIR)
+
 # Parameters
-OUTPUT_DIR = "isaac_output"
+OUTPUT_DIR = "/mnt/isaac/apps/carter_sim_struct2depth/results"
 FILE_EXT = "png"
 DEPTH = True
 EGOMOTION = False
-MODEL_CKPT = "ckpts/model-XXXX"
+MODEL_CKPT = "/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160"
 BATCH_SIZE = 1
 IMG_HEIGHT = 128
 IMG_WIDTH = 416
@@ -37,26 +41,54 @@ INFERENCE_CROP = INFERENCE_CROP_NONE
 USE_MASKS = False
 
 # Root directory of the Isaac
-ROOT_DIR = os.path.abspath("/usr/local/lib/isaac")
+ROOT_DIR = os.path.abspath("/mnt/isaac/apps/carter_sim_struct2depth")
 sys.path.append(ROOT_DIR)
-import struct
 from engine.pyalice import *
 
 
 class MonocularDepthMap(Codelet):
     def start(self):
         # This part will be run once in the beginning of the program
-        print("Running initialization")
+        logging.info("Running MonocularDepthMap initialization")
 
         # Input and output messages for the Codelet
         self.rx = self.isaac_proto_rx("ColorCameraProto", "rgb_image")
-        self.tx = self.isaac_proto_tx("DepthCameraViewer", "depth_map")
+        self.tx = self.isaac_proto_tx("DepthCameraProto", "depth_listener")
+        self.depth_image_proto = self.isaac_proto_tx("ImageProto", "rgb_image")
+        self.depth_pinhole_proto = self.isaac_proto_tx("PinholeProto", "pinhole")
+        logging.info("RX and TX protos have been created")
+
+        self.count = 0  # Count how many images taken
+
+        # Create inference model
+        self.inference_model = model.Model(is_training=False,
+                                           batch_size=BATCH_SIZE,
+                                           img_height=IMG_HEIGHT,
+                                           img_width=IMG_WIDTH,
+                                           seq_length=SEQ_LENGTH,
+                                           architecture=ARCHITECTURE,
+                                           imagenet_norm=IMAGENET_NORM,
+                                           use_skip=USE_SKIP,
+                                           joint_encoder=JOINT_ENCODER)
+        logging.info("Inference model created")
+
+        # Restore model ckpt and configuration settings
+        vars_to_restore = util.get_vars_to_save_and_restore(MODEL_CKPT)
+        self.saver = tf.train.Saver(vars_to_restore)
+        self.sv = tf.train.Supervisor(logdir='/tmp/', saver=None)
+        self.config = tf.ConfigProto()
+        self.config.gpu_options.allow_growth = True
+
+        if not gfile.Exists(OUTPUT_DIR):
+            gfile.MakeDirs(OUTPUT_DIR)
+        logging.info('Predictions will be saved in %s.', OUTPUT_DIR)
+        logging.info("Initialization successful")
 
         # Tick every time we receive an image
         self.tick_on_message(self.rx)
 
     def tick(self):
-        # print("Ticking")
+        logging.info("Ticking")
 
         # Extract image proto
         rgb_image_proto = self.rx.get_proto().image
@@ -79,37 +111,43 @@ class MonocularDepthMap(Codelet):
 
         # Transform into image
         image = np.frombuffer(image_buffer, dtype=np.uint8)
-        image = image.reshape((rows, cols, channels))
+        image = np.reshape(image, (rows, cols, channels)) / 255.
+        # print(image)
         print("Image initial shape: {}".format(np.shape(image)))
+        # cv2.imshow('image',image)
+        # k = cv2.waitKey(0)
+        # if k == 27:         # wait for ESC key to exit
+        #     cv2.destroyAllWindows()
 
-        # Reshape to inference network size
-        image = image.reshape((IMG_HEIGHT, IMG_WIDTH, channels))
-        print("Image network shape: {}".format(np.shape(image)))
+        # Reshape to inference network size and homogeneous coordinates
+        image = cv2.resize(image, (IMG_WIDTH, IMG_HEIGHT))
+        print("Image resized shape: {}".format(np.shape(image)))
+
+        # cv2.imshow('image',image)
+        # k = cv2.waitKey(0)
+        # if k == 27:         # wait for ESC key to exit
+        #     cv2.destroyAllWindows()
+        image_tensor = np.reshape(image, (1, IMG_HEIGHT, IMG_WIDTH, channels))
+        print("Image reshaped shape: {}".format(np.shape(image)))
 
         # Extract camera attributes
-        pinhole = self.rx.get_proto().pinhole
+        pinhole_proto = self.rx.get_proto().pinhole
 
         # Run inference
-        est_depth = _run_inference(image,
-                                   output_dir=OUTPUT_DIR,
-                                   file_extension=FILE_EXT,
-                                   depth=DEPTH,
-                                   egomotion=EGOMOTION,
-                                   model_ckpt=MODEL_CKPT,
-                                   batch_size=BATCH_SIZE,
-                                   img_height=IMG_HEIGHT,
-                                   img_width=IMG_WIDTH,
-                                   seq_length=SEQ_LENGTH,
-                                   architecture=ARCHITECTURE,
-                                   imagenet_norm=IMAGENET_NORM,
-                                   use_skip=USE_SKIP,
-                                   joint_encoder=JOINT_ENCODER,
-                                   shuffle=SHUFFLE,
-                                   flip_for_depth=FLIP,
-                                   inference_mode=INFERENCE_MODE,
-                                   inference_crop=INFERENCE_CROP,
-                                   use_masks=USE_MASKS
-                                   )
+        est_depth, visualization = self.run_inference(image_tensor,
+                                                      output_dir=OUTPUT_DIR,
+                                                      file_extension=FILE_EXT,
+                                                      depth=DEPTH,
+                                                      egomotion=EGOMOTION,
+                                                      flip_for_depth=FLIP,
+                                                      inference_crop=INFERENCE_CROP,
+                                                      use_masks=USE_MASKS
+                                                      )
+
+        # cv2.imshow('Depth Map', visualization)
+        # k = cv2.waitKey(0)
+        # if k == 27:
+        #     cv2.destroyAllWindows()
 
         print("Depth map shape: {}".format(np.shape(est_depth)))
         print("Depth min: {}".format(np.min(est_depth)))
@@ -117,26 +155,26 @@ class MonocularDepthMap(Codelet):
 
         # Initialize tx protos
         depth_camera_viewer = self.tx.init_proto()
-        depth_image_proto = isaac_proto_tx("ImageProto", "rgb_image").init_proto()
-        depth_pinhole_proto = isaac_proto_tx("PinholeProto", "pinhole").init_proto()
+        depth_image_proto = self.depth_image_proto.init_proto()
+        depth_pinhole_proto = self.depth_pinhole_proto.init_proto()
 
         # Set image proto attributes
-        depth_image_proto.elementType = 'float32'  # TODO: Check syntax
+        depth_image_proto.elementType = 'float32'
         depth_image_proto.rows = IMG_HEIGHT
         depth_image_proto.cols = IMG_WIDTH
         depth_image_proto.channels = 1
 
         # Serialize image
-        depth_buffer = np.getbuffer(est_depth)
-        depth_image_proto.dataBufferIndex = depth_buffer
-        # depth_image_proto.dataBufferIndex = len(depth_buffer)
-        # depth_image_proto.set_buffer_content(depth_buffer)  # TODO: Find actual method
+        depth_buffer = est_depth.tobytes()
+        depth_image_proto.dataBufferIndex = 0  # TODO: Figure out how to store image data as buffer
 
         # Set pinhole intrinsics
         depth_pinhole_proto.rows = IMG_HEIGHT
         depth_pinhole_proto.cols = IMG_WIDTH
-        depth_pinhole_proto.focal = rgb_image_proto.focal # TODO: Check that these values are correct
-        depth_pinhole_proto.center = rgb_image_proto.center
+        depth_pinhole_proto.focal = pinhole_proto.focal  # TODO: Check that these values are correct
+        depth_pinhole_proto.center = pinhole_proto.center
+        print("Pinhole focal: {}".format(depth_pinhole_proto.focal))
+        print("Pinhole center: {}".format(depth_pinhole_proto.center))
 
         # Set depth camera proto
         depth_camera_viewer.depthImage = depth_image_proto
@@ -146,51 +184,24 @@ class MonocularDepthMap(Codelet):
 
         # Publish DepthCameraProto
         self.tx.publish()
+        logging.info("Published!")
 
+    # Run inference. Expects input image with values from 0-1.
+    def run_inference(self,
+                      image=None,
+                      output_dir=None,
+                      file_extension='png',
+                      depth=True,
+                      egomotion=False,
+                      flip_for_depth=False,
+                      inference_crop=INFERENCE_CROP_NONE,
+                      use_masks=False
+                      ):
 
-def _run_inference(image=None,
-                   output_dir=None,
-                   file_extension='png',
-                   depth=True,
-                   egomotion=False,
-                   model_ckpt=None,
-                   batch_size=1,
-                   img_height=128,
-                   img_width=416,
-                   seq_length=3,
-                   architecture=nets.RESNET,
-                   imagenet_norm=True,
-                   use_skip=True,
-                   joint_encoder=True,
-                   shuffle=False,
-                   flip_for_depth=False,
-                   inference_mode=INFERENCE_MODE_SINGLE,
-                   inference_crop=INFERENCE_CROP_NONE,
-                   use_masks=False
-                   ):
-    """Runs inference. Refer to flags in inference.py for details."""
-    inference_model = model.Model(is_training=False,
-                                  batch_size=batch_size,
-                                  img_height=img_height,
-                                  img_width=img_width,
-                                  seq_length=seq_length,
-                                  architecture=architecture,
-                                  imagenet_norm=imagenet_norm,
-                                  use_skip=use_skip,
-                                  joint_encoder=joint_encoder)
-    vars_to_restore = util.get_vars_to_save_and_restore(model_ckpt)
-    saver = tf.train.Saver(vars_to_restore)
-    sv = tf.train.Supervisor(logdir='/tmp/', saver=None)
-    with sv.managed_session() as sess:
-        saver.restore(sess, model_ckpt)
-        if not gfile.Exists(output_dir):
-            gfile.MakeDirs(output_dir)
-        logging.info('Predictions will be saved in %s.', output_dir)
+        est_depth = None
+        visualization = None
 
         logging.info('Running inference:')
-
-        im_files = image
-
         # Run depth prediction network.
         if depth:
 
@@ -198,13 +209,24 @@ def _run_inference(image=None,
             if flip_for_depth:
                 image = np.flip(image, axis=1)
 
-            # Call inference
-            est_depth = inference_model.inference_depth(image, sess)
+            with self.sv.managed_session(config=self.config) as sess:
+                self.saver.restore(sess, MODEL_CKPT)
+                logging.info("Model ckpt restored")
+
+                est_depth = self.inference_model.inference_depth(image, sess)
 
             # Flip back
             if flip_for_depth:
                 est_depth = np.flip(est_depth, axis=2)
                 image = np.flip(image, axis=2)
+
+            # Reshape image from homogeneous coordinates to standard
+            image = np.reshape(image, (IMG_HEIGHT, IMG_WIDTH, 3))
+
+            # cv2.imshow('image',image)
+            # k = cv2.waitKey(0)
+            # if k == 27:         # wait for ESC key to exit
+            #     cv2.destroyAllWindows()
 
             # Create color map for visualization
             color_map = util.normalize_depth_for_display(np.squeeze(est_depth))
@@ -214,17 +236,17 @@ def _run_inference(image=None,
             # Save raw prediction and color visualization. Extract filename
             # without extension from full path: e.g. path/to/input_dir/folder1/
             # file1.png -> file1
-            # k = i - len(im_batch) + 1 + j
-            # filename_root = os.path.splitext(os.path.basename(im_files[k]))[0]
-            # pref = '_flip' if flip_for_depth else ''
-            # output_raw = os.path.join(
-            #     output_dirs[k], filename_root + pref + '.npy')
-            # output_vis = os.path.join(
-            #     output_dirs[k], filename_root + pref + '.png')
-            # with gfile.Open(output_raw, 'wb') as f:
-            #   np.save(f, est_depth[j])
-            # util.save_image(output_vis, visualization, file_extension)
-    return est_depth
+
+            pref = '_flip' if flip_for_depth else ''
+            output_raw = os.path.join(output_dir, 'image' + pref + '{}'.format(self.count) + '.npy')
+            output_vis = os.path.join(output_dir, 'image' + pref + '{}'.format(self.count) + '.png')
+
+            with gfile.Open(output_raw, 'wb') as f:
+                np.save(f, est_depth)
+            util.save_image(output_vis, visualization, file_extension)
+            self.count += 1
+            logging.info("Inference successful")
+        return est_depth, visualization
 
     # Run egomotion network.
     # if egomotion:

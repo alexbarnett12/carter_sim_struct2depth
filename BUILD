@@ -32,22 +32,43 @@ isaac_app(
     ],
 )
 
-py_binary(
-    name = "inference",
-    srcs = ["live_inference.py",
-            "pinhole_to_tensor.py",
-            "monocular_depth_map.py"],
+isaac_app(
+    name = "carter_sim_inference",
+    app_json_file = "carter_sim.app.json",
     data = [
-        "pinhole_to_tensor.config.json",
-        "pinhole_to_tensor.graph.json",
+        "carter.config.json",
+        "carter_inference.graph.json",
+        "navigation.config.json",
+        "navigation.graph.json",
+        "//apps/assets/maps",
+        "//packages/map:libmap_module.so",
+    ],
+    modules = [
+        "navigation",
+        "perception",
+        "planner",
+        "viewers",
+        "flatsim",
+        "//packages/ml:ml",
+        "//packages/ml:tensorflow",
+    ],
+)
+
+py_binary(
+    name = "live_inference",
+    srcs = [
+        "live_inference.py",
+        "monocular_depth_map.py",
+    ],
+    data = [
         ":base_control.graph.json",
         ":carter.config.json",
-        ":carter.graph.json",
+        ":carter_inference.graph.json",
         ":navigation.config.json",
         ":navigation.graph.json",
         "//apps:py_init",
-        "//messages:core_messages",
         "//apps/assets/maps",
+        "//messages:core_messages",
         "//packages/flatsim:libflatsim_module.so",
         "//packages/map:libmap_module.so",
         "//packages/ml:libml_module.so",
@@ -64,8 +85,10 @@ py_binary(
 
 py_binary(
     name = "train",
-    srcs = ["train.py",
-            "pinhole_to_tensor.py"],
+    srcs = [
+        "pinhole_to_tensor.py",
+        "train.py",
+    ],
     data = [
         "pinhole_to_tensor.config.json",
         "pinhole_to_tensor.graph.json",
@@ -75,8 +98,8 @@ py_binary(
         ":navigation.config.json",
         ":navigation.graph.json",
         "//apps:py_init",
-        "//messages:core_messages",
         "//apps/assets/maps",
+        "//messages:core_messages",
         "//packages/flatsim:libflatsim_module.so",
         "//packages/map:libmap_module.so",
         "//packages/ml:libml_module.so",
