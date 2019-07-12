@@ -43,7 +43,7 @@ FLIP_NONE = 'none'  # Always disables flipping.
 
 '''Isaac SDK code'''
 # Root directory of the Isaac
-ROOT_DIR = os.path.abspath("/usr/local/lib/isaac")
+ROOT_DIR = os.path.abspath("/mnt/isaac")
 sys.path.append(ROOT_DIR)
 
 from engine.pyalice import *
@@ -67,7 +67,7 @@ OUTPUT_NAME = 'output'
 STEPSIZE = 1
 
 # Number of samples to acquire in batch
-kSampleNumbers = 3
+kSampleNumbers = 1
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -125,10 +125,11 @@ class DataReader(object):
                 # Try to acquire a sample.
                 # If none are available, then wait for a bit so we do not spam the app.
                 sample = bridge.acquire_samples(kSampleNumbers)
+                print("SAMPLES ACQUIRED")
                 if not sample:
                     time.sleep(1)
                     continue
-
+                print(sample)
                 # print(np.shape(sample))
 
                 # Create wide image and segmentation triplets
@@ -246,8 +247,10 @@ class DataReader(object):
         with tf.name_scope('data_loading'):
 
             # Startup the sample accumulator bridge to get data
-            node = self.isaac_app.find_node_by_name("CarterTrainingSamples")
-            bridge = packages.ml.SampleAccumulator(node)
+            sample_accumulator = self.isaac_app.find_node_by_name("CarterTrainingSamples")
+            pinhole_to_tensor = self.isaac_app.find_node_by_name("pinhole_to_tensor")
+            bridge = packages.ml.SampleAccumulator(sample_accumulator)
+            pinhole_to_tensor = PinholeToTensor(pinhole_to_tensor, 0, 0)
 
             # Start the application and Sight server
             self.isaac_app.start_webserver()

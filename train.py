@@ -44,7 +44,7 @@ from pinhole_to_tensor import PinholeToTensor
 gfile = tf.gfile
 MAX_TO_KEEP = 1000000  # Maximum number of checkpoints to keep.
 
-flags.DEFINE_string('data_dir', '/usr/local/lib/isaac/apps/carter_sim_mod/struct2depth/kitti_processed_data',
+flags.DEFINE_string('data_dir', '/mnt/kitti_processed_data',
                     'Preprocessed data.')
 flags.DEFINE_string('file_extension', 'png', 'Image data file extension.')
 flags.DEFINE_float('learning_rate', 0.0002, 'Adam learning rate.')
@@ -87,7 +87,7 @@ flags.DEFINE_string('pretrained_ckpt', None, 'Path to checkpoint with '
 flags.DEFINE_string('imagenet_ckpt', None, 'Initialize the weights according '
                                            'to an ImageNet-pretrained checkpoint. Requires '
                                            'architecture to be ResNet-18.')
-flags.DEFINE_string('checkpoint_dir', '/usr/local/lib/isaac/apps/carter_sim_mod/struct2depth/ckpts',
+flags.DEFINE_string('checkpoint_dir', 'mnt/isaac/apps/carter_sim_mod/struct2depth/ckpts',
                     'Directory to save model '
                     'checkpoints.')
 flags.DEFINE_integer('train_steps', 10000000, 'Number of training steps.')
@@ -261,20 +261,17 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
         steps_per_epoch = train_model.reader.steps_per_epoch
         step = 1
         while step <= train_steps:
-            print('fetching!')
             fetches = {
                 'train': train_model.train_op,
                 'global_step': train_model.global_step,
                 'incr_global_step': train_model.incr_global_step
             }
-            print('fetched!')
             if step % summary_freq == 0:
                 fetches['loss'] = train_model.total_loss
                 fetches['summary'] = sv.summary_op
 
             results = sess.run(fetches)
             global_step = results['global_step']
-            print('results!')
 
             if step % summary_freq == 0:
                 sv.summary_writer.add_summary(results['summary'], global_step)
