@@ -140,7 +140,9 @@ class DataReader(object):
                                                                               sample[2][0]]))
 
                 # TODO: Retrieve camera mat from Isaac
-                intrinsics = np.array([[480, 0, 270], [0, 480, 480], [0, 0, 1]], dtype=np.float32)
+                # intrinsics = np.array([[480, 0, 270], [0, 480, 480], [0, 0, 1]], dtype=np.float32)
+                intrinsics = np.array([[208, 0, 208], [0, 113.778, 64], [0, 0, 1]], dtype=np.float32)
+
 
                 # print(np.shape(image_seq))
                 # print(np.shape(seg_mask_seq))
@@ -248,9 +250,9 @@ class DataReader(object):
 
             # Startup the sample accumulator bridge to get data
             sample_accumulator = self.isaac_app.find_node_by_name("CarterTrainingSamples")
-            pinhole_to_tensor = self.isaac_app.find_node_by_name("pinhole_to_tensor")
+            # pinhole_to_tensor = self.isaac_app.find_node_by_name("pinhole_to_tensor")
             bridge = packages.ml.SampleAccumulator(sample_accumulator)
-            pinhole_to_tensor = PinholeToTensor(pinhole_to_tensor, 0, 0)
+            # pinhole_to_tensor = PinholeToTensor(pinhole_to_tensor, 0, 0)
 
             # Start the application and Sight server
             self.isaac_app.start_webserver()

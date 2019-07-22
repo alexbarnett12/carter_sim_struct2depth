@@ -6,8 +6,8 @@ import cv2
 import tensorflow as tf
 
 # Segmentation mask generation
-from .gen_masks_kitti import MaskGenerator
-from .alignment import align
+# from .gen_masks_kitti import MaskGenerator
+# from .alignment import align
 
 
 SEQ_LENGTH = 3
@@ -16,8 +16,8 @@ HEIGHT = 128
 
 class ImageProcessor:
     def __init__(self):
-
-        self.mask_generator = MaskGenerator()
+        b = 0
+        # self.mask_generator = MaskGenerator()
 
 
     def create_triplet(self, images):
