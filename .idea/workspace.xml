@@ -2,14 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2f97033d-6cf7-4265-88ac-cb5d9d0bcd02" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bridge_config/carter_full.json" beforeDir="false" afterPath="$PROJECT_DIR$/bridge_config/carter_full.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/carter.config.json" beforeDir="false" afterPath="$PROJECT_DIR$/carter.config.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pinhole_to_tensor.py" beforeDir="false" afterPath="$PROJECT_DIR$/pinhole_to_tensor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bla.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/bla2.png" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/struct2depth/Mask_RCNN" beforeDir="false" afterPath="$PROJECT_DIR$/struct2depth/Mask_RCNN" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/struct2depth/Mask_RCNN/samples/coco/coco.py" beforeDir="false" afterPath="$PROJECT_DIR$/struct2depth/Mask_RCNN/samples/coco/coco.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/struct2depth/process_image.py" beforeDir="false" afterPath="$PROJECT_DIR$/struct2depth/process_image.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/struct2depth/reader.py" beforeDir="false" afterPath="$PROJECT_DIR$/struct2depth/reader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/struct2depth/Mask_RCNN/samples/coco/cocoapi/PythonAPI/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/struct2depth/Mask_RCNN/samples/coco/cocoapi/PythonAPI/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/struct2depth/Mask_RCNN/samples/coco/cocoapi/PythonAPI/pycocotools/mask.py" beforeDir="false" afterPath="$PROJECT_DIR$/struct2depth/Mask_RCNN/samples/coco/cocoapi/PythonAPI/pycocotools/mask.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -20,97 +18,9 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/save_image_triplets.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="16" column="38" lean-forward="true" selection-start-line="16" selection-start-column="38" selection-end-line="16" selection-end-column="38" />
-              <folding>
-                <element signature="e#0#38#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/pinhole_to_tensor.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="930">
-              <caret line="62" column="23" selection-start-line="62" selection-start-column="23" selection-end-line="62" selection-end-column="23" />
-              <folding>
-                <element signature="e#0#64#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/struct2depth/reader.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1164">
-              <caret line="251" column="25" lean-forward="true" selection-start-line="251" selection-start-column="25" selection-end-line="251" selection-end-column="25" />
-              <folding>
-                <element signature="e#748#786#0" expanded="true" />
-                <element signature="e#5125#5153#0" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/struct2depth/process_image.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="270">
-              <caret line="18" column="13" selection-start-line="18" selection-start-column="13" selection-end-line="18" selection-end-column="13" />
-              <folding>
-                <element signature="e#85#103#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/carter.config.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="561">
-              <caret line="147" column="17" selection-start-line="147" selection-start-column="17" selection-end-line="147" selection-end-column="17" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/carter.graph.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="678">
-              <caret line="327" column="39" selection-start-line="327" selection-start-column="26" selection-end-line="327" selection-end-column="39" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/monocular_depth_map.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="840">
-              <caret line="68" column="69" selection-start-line="68" selection-start-column="69" selection-end-line="68" selection-end-column="69" />
-              <folding>
-                <element signature="e#0#64#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/struct2depth/gen_data_kitti.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="516">
-              <caret line="107" column="36" selection-start-line="107" selection-start-column="27" selection-end-line="107" selection-end-column="36" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2925">
+            <state relative-caret-position="1035">
               <caret line="294" selection-start-line="294" selection-end-line="294" />
               <folding>
                 <element signature="e#755#793#0" expanded="true" />
@@ -119,13 +29,13 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/struct2depth/model.py">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/struct2depth/reader.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="780">
-              <caret line="60" column="27" selection-start-line="60" selection-start-column="27" selection-end-line="60" selection-end-column="27" />
+            <state relative-caret-position="-1973">
+              <caret line="251" column="13" selection-start-line="251" selection-start-column="13" selection-end-line="251" selection-end-column="13" />
               <folding>
-                <element signature="e#736#774#0" expanded="true" />
+                <element signature="e#748#786#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -222,6 +132,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Course" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -232,13 +143,12 @@
             <path>
               <item name="carter_sim_struct2depth" type="b2602c69:ProjectViewProjectNode" />
               <item name="carter_sim_struct2depth" type="462c0819:PsiDirectoryNode" />
-              <item name="struct2depth" type="462c0819:PsiDirectoryNode" />
+              <item name="results" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
         </subPane>
       </pane>
-      <pane id="Course" />
       <pane id="Scope" />
     </panes>
   </component>
@@ -326,22 +236,22 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="67" y="25" width="3773" height="2135" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.0784" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
-      <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.1986234" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.39945653" />
-      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Terminal" order="8" visible="true" weight="0.44718865" />
-      <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
-      <window_info anchor="bottom" id="Python Console" order="10" />
+      <window_info anchor="bottom" id="Educational.CheckDetails" order="0" />
+      <window_info anchor="bottom" id="Message" order="1" />
+      <window_info anchor="bottom" id="Find" order="2" />
+      <window_info anchor="bottom" id="Run" order="3" visible="true" weight="0.1986234" />
+      <window_info anchor="bottom" id="Debug" order="4" weight="0.39945653" />
+      <window_info anchor="bottom" id="Cvs" order="5" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="6" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="7" />
+      <window_info anchor="bottom" id="Version Control" order="8" />
+      <window_info anchor="bottom" id="Terminal" order="9" visible="true" weight="0.4473943" />
+      <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
+      <window_info anchor="bottom" id="Python Console" order="11" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -353,13 +263,6 @@
     </ignored-roots>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/struct2depth/Mask_RCNN/mrcnn/visualize.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="27" column="29" selection-start-line="27" selection-end-line="28" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/struct2depth/Mask_RCNN/mrcnn/model.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="285">
@@ -419,9 +322,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/carter_save.lua">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/carter_save.lua" />
     <entry file="file://$PROJECT_DIR$/carter_save.graph.json">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="33">
@@ -435,36 +336,16 @@
     <entry file="file://$PROJECT_DIR$/bla2.png">
       <provider selected="true" editor-type-id="images" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/0-fseg.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/9.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/9-fseg.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/8.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/8-fseg.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/7.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/7-fseg.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/5.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/5-fseg.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/3-fseg.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/synth_images/0-fseg.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/9.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/9-fseg.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/8.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/8-fseg.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/7.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/7-fseg.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/5.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/5-fseg.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/3-fseg.png" />
     <entry file="file://$PROJECT_DIR$/carter_save.config.json">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="396">
@@ -472,30 +353,14 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/0.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/1.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/1-fseg.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/2.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/2-fseg.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/3.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/4.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/synth_images/4-fseg.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/synth_images/0.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/1.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/1-fseg.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/2.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/2-fseg.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/3.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/4.png" />
+    <entry file="file://$PROJECT_DIR$/synth_images/4-fseg.png" />
     <entry file="file://$PROJECT_DIR$/save_images.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="318">
@@ -536,16 +401,6 @@
     <entry file="file://$PROJECT_DIR$/struct2depth/gen_train_txt.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/train.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2925">
-          <caret line="294" selection-start-line="294" selection-end-line="294" />
-          <folding>
-            <element signature="e#755#793#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/struct2depth/model.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="780">
@@ -559,20 +414,19 @@
     <entry file="file://$PROJECT_DIR$/save_image_triplets.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="240">
-          <caret line="16" column="38" lean-forward="true" selection-start-line="16" selection-start-column="38" selection-end-line="16" selection-end-column="38" />
+          <caret line="16" column="25" selection-start-line="16" selection-start-column="25" selection-end-line="16" selection-end-column="25" />
           <folding>
             <element signature="e#0#38#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/struct2depth/reader.py">
+    <entry file="file://$PROJECT_DIR$/pinhole_to_tensor.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1164">
-          <caret line="251" column="25" lean-forward="true" selection-start-line="251" selection-start-column="25" selection-end-line="251" selection-end-column="25" />
+        <state relative-caret-position="360">
+          <caret line="20" column="70" selection-start-line="20" selection-start-column="70" selection-end-line="20" selection-end-column="70" />
           <folding>
-            <element signature="e#748#786#0" expanded="true" />
-            <element signature="e#5125#5153#0" />
+            <element signature="e#0#64#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -596,8 +450,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/carter.graph.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="678">
-          <caret line="327" column="39" selection-start-line="327" selection-start-column="26" selection-end-line="327" selection-end-column="39" />
+        <state relative-caret-position="712">
+          <caret line="327" column="5" selection-start-line="327" selection-start-column="5" selection-end-line="327" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/monocular_depth_map.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="840">
+          <caret line="68" column="69" selection-start-line="68" selection-start-column="69" selection-end-line="68" selection-end-column="69" />
+          <folding>
+            <element signature="e#0#64#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -608,12 +472,22 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pinhole_to_tensor.py">
+    <entry file="file://$PROJECT_DIR$/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="930">
-          <caret line="62" column="23" selection-start-line="62" selection-start-column="23" selection-end-line="62" selection-end-column="23" />
+        <state relative-caret-position="1035">
+          <caret line="294" selection-start-line="294" selection-end-line="294" />
           <folding>
-            <element signature="e#0#64#0" expanded="true" />
+            <element signature="e#755#793#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/struct2depth/reader.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1973">
+          <caret line="251" column="13" selection-start-line="251" selection-start-column="13" selection-end-line="251" selection-end-column="13" />
+          <folding>
+            <element signature="e#748#786#0" expanded="true" />
           </folding>
         </state>
       </provider>
