@@ -7,14 +7,12 @@ import sys
 import tensorflow as tf
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 
-from struct2depth import util
-from struct2depth.process_image import create_mask
+from struct2depth.process_image import ImageProcessor
 import time
 
 # Root directory of the Isaac
-ROOT_DIR = os.path.abspath("/usr/local/lib/isaac")
+ROOT_DIR = os.path.abspath("/mnt/isaac")
 sys.path.append(ROOT_DIR)
 
 from engine.pyalice import *
@@ -66,28 +64,36 @@ bridge = packages.ml.SampleAccumulator(node)
 app.start_webserver()
 app.start()
 
+img_processor = ImageProcessor()
+
 count = 0
 while True:
-    # Retrieve rgb images from isaac sim
     while True:
         num = bridge.get_sample_number()
         if num >= kSampleNumbers:
             break
         time.sleep(1.0)
         print("waiting for samples: {}".format(num))
-    print("{} Samples acquired".format(num))
 
     images = bridge.acquire_samples(kSampleNumbers)
-    cv2.imwrite("bla.png", np.uint8(np.array([images[0][0]])))
+    print("{} Samples acquired".format(kSampleNumbers))
+
+    while np.shape(images)[0] < 3:
+        time.sleep(.25)
+        images = np.concatenate((images, bridge.acquire_samples(kSampleNumbers)))
 
     for i in range(kSampleNumbers):
         # Create segmentation mask
         img = cv2.resize(images[i][0], (WIDTH, HEIGHT))
-        seg_img = create_mask(img)
+        # seg_img = img_processor.create_mask(img)
+        seg_img = np.zeros(shape=(HEIGHT, WIDTH, 3))
+
+        # Convert to uint8
+        img = img.astype(np.uint8)
 
         # Save to directory
-        cv2.imwrite('/usr/local/lib/isaac/apps/carter_sim_struct2depth/synth_images/{}.png'.format(count), img)
-        cv2.imwrite('/usr/local/lib/isaac/apps/carter_sim_struct2depth/synth_images/{}-fseg.png'.format(count), seg_img)
+        cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/synth_images_single/{}.png'.format(count), img)
+        # cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/synth_images/{}-fseg.png'.format(count), seg_img)
         print('saved images')
 
         count += 1

@@ -16,7 +16,7 @@ HEIGHT = 128
 
 class ImageProcessor:
     def __init__(self):
-        b = 0
+        bla = 0
         # self.mask_generator = MaskGenerator()
 
 
@@ -33,7 +33,9 @@ class ImageProcessor:
 
         for img in images:
 
-            img = cv2.resize(img, (WIDTH, HEIGHT))
+            if img.shape is not (HEIGHT, WIDTH):
+                img = cv2.resize(img, (WIDTH, HEIGHT))
+
             big_img[:, wct * WIDTH:(wct + 1) * WIDTH] = img
             wct += 1
 

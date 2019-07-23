@@ -114,13 +114,13 @@
     
     "LeftColorCameraEncoder": {
 	"isaac.ml.ColorCameraEncoder": {
-	    "rows": 256,
-	    "cols": 512
+	    "rows": 128,
+	    "cols": 416
 	}
   },
     "CarterTrainingSamples": {
 	"isaac.ml.SampleAccumulator": {
-	    "sample_buffer_size": 1
+	    "sample_buffer_size": 3
 	}
     },
   "RightCameraSubscriber": {

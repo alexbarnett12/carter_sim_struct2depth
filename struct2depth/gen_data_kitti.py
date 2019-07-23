@@ -30,8 +30,8 @@ SEQ_LENGTH = 3
 WIDTH = 416
 HEIGHT = 128
 STEPSIZE = 1
-INPUT_DIR = '/usr/local/lib/struct2depth/KITTI_FULL/kitti_raw_data'
-OUTPUT_DIR = '/usr/local/lib/struct2depth/kitti_processed_data/'
+INPUT_DIR = '/mnt/isaac/apps/carter_sim_struct2depth/synth_images/'
+OUTPUT_DIR = '/mnt/isaac/apps/carter_sim_struct2depth/synth_images/'
 
 
 def get_line(file, start):

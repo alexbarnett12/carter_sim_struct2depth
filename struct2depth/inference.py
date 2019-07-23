@@ -37,6 +37,7 @@ from absl import app
 from absl import flags
 from absl import logging
 #import matplotlib.pyplot as plt
+
 import model
 import numpy as np
 import fnmatch

@@ -76,7 +76,7 @@ flags.DEFINE_bool('egomotion', False, 'Determines if the egomotion prediction '
                                       'that files in the same directory belong in the same '
                                       'sequence, and sorting them alphabetically establishes the '
                                       'right temporal order.')
-flags.DEFINE_string('model_ckpt', 'struct2depth/pretrained_ckpt/model-199160', 'Model checkpoint to evaluate.')
+flags.DEFINE_string('model_ckpt', 'struct2depth/pretrained_ckpt/model-1399', 'Model checkpoint to evaluate.')
 flags.DEFINE_string('input_dir', None, 'Directory containing image files to '
                                        'evaluate. This crawls recursively for images in the '
                                        'directory, mirroring relative subdirectory structures '

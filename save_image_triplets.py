@@ -7,20 +7,18 @@ import sys
 import tensorflow as tf
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 
-from struct2depth import util
-from struct2depth.process_image import process_image
+from struct2depth.process_image import ImageProcessor
 import time
+import csv
 
 # Root directory of the Isaac
-ROOT_DIR = os.path.abspath("/usr/local/lib/isaac")
+ROOT_DIR = os.path.abspath("/mnt/isaac")
 sys.path.append(ROOT_DIR)
 
 from engine.pyalice import *
 import packages.ml
-from pinhole_to_tensor import PinholeToTensor
-import capnp
+from differential_base_state import DifferentialBaseState
 
 # Op names.
 COLOR_IMAGE_NAME = 'rgb_image'
@@ -30,11 +28,12 @@ OUTPUT_NAME = 'output'
 STEPSIZE = 1
 WIDTH = 416
 HEIGHT = 128
+TIME_DELAY = 0.25 # seconds
 
 OUTPUT_DIR = 'synth_images'
 
-# Number of samples to acquire in batch
-kSampleNumbers = 500
+# Number of samples to acquire at a time from Isaac sim
+kSampleNumbers = 1
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -60,11 +59,16 @@ app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
 app.load_graph("apps/assets/maps/carter_warehouse_p.graph.json")
 app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
 
+# Register custom PyCodelet
+app.register({"differential_base_state": DifferentialBaseState})
+
 # Startup the bridge to get data.
 node = app.find_node_by_name("CarterTrainingSamples")
 bridge = packages.ml.SampleAccumulator(node)
 app.start_webserver()
 app.start()
+
+img_processor = ImageProcessor()
 
 count = 0
 while True:
@@ -75,25 +79,43 @@ while True:
             break
         time.sleep(1.0)
         print("waiting for samples: {}".format(num))
-    print("{} Samples acquired".format(num))
 
     images = bridge.acquire_samples(kSampleNumbers)
-    cv2.imwrite("bla.png", np.uint8(np.array([images[0][0]])))
+    # print("{} Samples acquired".format(kSampleNumbers))
 
-    # Create wide image and segmentation triplets
-    image_seq = []
-    seg_seq = []
-    for i in range(0, kSampleNumbers - 2):
-        big_img, big_seg_img = process_image(np.array([images[i][0],
-                                                       images[i + 1][0],
-                                                       images[i + 2][0]]))
+    # Retrieve differential base speed from file
+    # speed = []
+    # angular_speed = []
+    with open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
+        csv_reader = csv.reader(speed_file, delimiter=',')
+        for row in csv_reader:
+            speed = float(row[0])
+            angular_speed = float(row[1])
+    print("{}, {}".format(speed, angular_speed))
 
-        # Save to directory
-        cv2.imwrite('/usr/local/lib/isaac/apps/carter_sim_struct2depth/synth_images/{}.png'.format(count), np.uint8(big_img))
-        cv2.imwrite('/usr/local/lib/isaac/apps/carter_sim_struct2depth/synth_images/{}-fseg.png'.format(count), big_seg_img)
-        print('saved images')
+    # Only save image if the robot is moving or rotating above a threshold speed
+    # Images below these thresholds do not have a great enough disparity for the network to learn depth.
+    if speed > 0.1 or angular_speed > 0.15:
+        while np.shape(images)[0] < 3:
+            time.sleep(TIME_DELAY)
+            images = np.concatenate((images, bridge.acquire_samples(kSampleNumbers)))
 
-        count += 1
+        # Create wide image and segmentation triplets
+        image_seq = []
+        seg_seq = []
+        intrinsics = "208, 0, 208, 0, 113.778, 64, 0, 0, 1"
+        for i in range(0, np.shape(images)[0] - 2):
+            big_img, big_seg_img = img_processor.process_image(np.array([images[i][0],
+                                                           images[i + 1][0],
+                                                           images[i + 2][0]]))
 
+            # Save to directory
+            cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/synth_images_25_delay/{}.png'.format(count), np.uint8(big_img))
+            # cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/synth_images_seg/{}-fseg.png'.format(count), big_seg_img)
+            # f = open('/mnt/isaac/apps/carter_sim_struct2depth/synth_images_intrinsics/{}.csv'.format(count), 'w')
+            # f.write(intrinsics)
+            # f.close()
 
+            print('saved images')
 
+            count += 1

@@ -8,9 +8,6 @@ ROOT_DIR = os.path.abspath("/usr/local/lib/isaac")
 sys.path.append(ROOT_DIR)
 import struct
 
-HEIGHT = 128
-WIDTH = 416
-
 from engine.pyalice import *
 # import packages.ml
 # import apps.pinhole_to_tensor
@@ -35,32 +32,16 @@ class PinholeToTensor(Codelet):
         pinhole = self.rx.get_proto().pinhole
 
         # Extract proto attributes
-        rows = pinhole.rows
-        cols = pinhole.cols
-        print("Rows, columns: {}, {}".format(rows, cols))
-        focal_x = pinhole.focal.y
-        focal_y = pinhole.focal.x
-        center_x = pinhole.center.y
-        center_y = pinhole.center.x
-
-        # Scale attributes for desired WIDTH, HEIGHT
-        scale_x = WIDTH / cols
-        scale_y = HEIGHT / rows
-        camera_mat = [focal_x, 0, center_x,
-                      0, focal_y, center_y,
-                      0, 0, 1]
-        print("Original camera matrix: {}:".format(camera_mat))
-
-        focal_x *= scale_x
-        focal_y *= scale_y
-        center_x *= scale_x
-        center_y *= scale_y
+        focal_x = pinhole.focal.x
+        focal_y = pinhole.focal.y
+        center_x = pinhole.center.x
+        center_y = pinhole.center.y
 
         # Create 1D camera matrix
-        camera_mat = [focal_x, 0, center_x,
-                      0, focal_y, center_y,
+        camera_mat = [int(focal_x), 0, int(center_x),
+                      0, int(focal_y), int(center_y),
                       0, 0, 1]
-        print("Scaled camera matrix: {}:".format(camera_mat))
+        print(camera_mat)
 
         # Initialize TensorProto and TensorListProto for the camera matrix
         tensor_list = self.tx.init_proto()

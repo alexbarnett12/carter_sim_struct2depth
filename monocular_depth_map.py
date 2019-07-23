@@ -18,11 +18,11 @@ ROOT_DIR = os.path.abspath("/mnt/isaac")
 sys.path.append(ROOT_DIR)
 
 # Parameters
-OUTPUT_DIR = "/mnt/isaac/apps/carter_sim_struct2depth/results"
+OUTPUT_DIR = "/mnt/isaac/apps/carter_sim_struct2depth/results_actual"
 FILE_EXT = "png"
 DEPTH = True
 EGOMOTION = False
-MODEL_CKPT = "/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160"
+MODEL_CKPT = "/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts_saved_images/model-2772"
 BATCH_SIZE = 1
 IMG_HEIGHT = 128
 IMG_WIDTH = 416

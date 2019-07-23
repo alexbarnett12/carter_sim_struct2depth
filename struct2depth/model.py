@@ -23,11 +23,22 @@ from __future__ import print_function
 from absl import logging
 import numpy as np
 import tensorflow as tf
+import os
+import sys
 
-from struct2depth import nets
-from struct2depth import project
-from struct2depth import reader
-from struct2depth import util
+# from struct2depth import nets
+# from struct2depth import project
+# from struct2depth import reader
+# from struct2depth import reader_saved_images
+# from struct2depth import util
+
+ROOT_DIR = os.path.abspath("/mnt/isaac/apps/carter_sim_struct2depth/struct2depth")
+sys.path.append(ROOT_DIR)
+import nets
+import project
+import reader
+# import reader_saved_images
+import util
 
 gfile = tf.gfile
 slim = tf.contrib.slim
@@ -177,7 +188,6 @@ class Model(object):
 
   def build_inference_for_training(self):
     """Invokes depth and ego-motion networks and computes clouds if needed."""
-    logging.info("Reading data")
     (self.image_stack, self.image_stack_norm, self.seg_stack,
      self.intrinsic_mat, self.intrinsic_mat_inv) = self.reader.read_data()
     print("Data Read!")
@@ -497,7 +507,6 @@ class Model(object):
               target_depth = self.depth[j][s]
 
             key = '%d-%d' % (i, j)
-
             if self.handle_motion:
               # self.seg_stack of shape (B, H, W, 9).
               # target_depth corresponds to middle frame, of shape (B, H, W, 1).

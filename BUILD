@@ -86,6 +86,7 @@ py_binary(
 py_binary(
     name = "train",
     srcs = [
+        "differential_base_state.py",
         "pinhole_to_tensor.py",
         "train.py",
     ],
@@ -116,7 +117,10 @@ py_binary(
 
 py_binary(
     name = "save_image_triplets",
-    srcs = ["save_image_triplets.py"],
+    srcs = [
+        "differential_base_state.py",
+        "save_image_triplets.py",
+    ],
     data = [
         ":base_control.graph.json",
         ":carter_save.config.json",

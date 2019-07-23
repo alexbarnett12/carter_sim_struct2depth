@@ -23,7 +23,6 @@ import math
 import os
 import random
 import time
-import sys
 
 from absl import app
 from absl import flags
@@ -36,15 +35,24 @@ from struct2depth import nets
 from struct2depth import reader
 from struct2depth import util
 
-# Isaac SDK
+# Isaac SDK imports
 from engine.pyalice import *
-import packages.ml
 from pinhole_to_tensor import PinholeToTensor
+from differential_base_state import DifferentialBaseState
 
 gfile = tf.gfile
+
+# M
 MAX_TO_KEEP = 1000000  # Maximum number of checkpoints to keep.
 
-flags.DEFINE_string('data_dir', '/mnt/kitti_processed_data',
+# Isaac Sim flags
+flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter.graph.json",
+                    'Where the isaac SDK app graph is stored')
+flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter.config.json",
+                    'Where the isaac SDK app node configuration is stored')
+
+# Tensorflow flags
+flags.DEFINE_string('data_dir', '/mnt',
                     'Preprocessed data.')
 flags.DEFINE_string('file_extension', 'png', 'Image data file extension.')
 flags.DEFINE_float('learning_rate', 0.0002, 'Adam learning rate.')
@@ -56,7 +64,7 @@ flags.DEFINE_float('icp_weight', 0.0, 'ICP loss weight.')
 flags.DEFINE_float('size_constraint_weight', 0.0005, 'Weight of the object '
                                                      'size constraint loss. Use only when motion handling is '
                                                      'enabled.')
-flags.DEFINE_integer('batch_size', 4, 'The size of a sample batch')
+flags.DEFINE_integer('batch_size', 5, 'The size of a sample batch')
 flags.DEFINE_integer('img_height', 128, 'Input frame height.')
 flags.DEFINE_integer('img_width', 416, 'Input frame width.')
 flags.DEFINE_integer('seq_length', 3, 'Number of frames in sequence.')
@@ -84,14 +92,14 @@ flags.DEFINE_enum('flipping_mode', reader.FLIP_RANDOM,
                   'always or never, respectively.')
 flags.DEFINE_string('pretrained_ckpt', None, 'Path to checkpoint with '
                                              'pretrained weights.  Do not include .data* extension.')
-flags.DEFINE_string('imagenet_ckpt', None, 'Initialize the weights according '
+flags.DEFINE_string('imagenet_ckpt', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt', 'Initialize the weights according '
                                            'to an ImageNet-pretrained checkpoint. Requires '
                                            'architecture to be ResNet-18.')
-flags.DEFINE_string('checkpoint_dir', 'mnt/isaac/apps/carter_sim_mod/struct2depth/ckpts',
+flags.DEFINE_string('checkpoint_dir', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts_sim',
                     'Directory to save model '
                     'checkpoints.')
 flags.DEFINE_integer('train_steps', 10000000, 'Number of training steps.')
-flags.DEFINE_integer('summary_freq', 100, 'Save summaries every N steps.')
+flags.DEFINE_integer('summary_freq', 1, 'Save summaries every N steps.')
 flags.DEFINE_bool('depth_upsampling', True, 'Whether to apply depth '
                                             'upsampling of lower-scale representations before warping to '
                                             'compute reconstruction loss on full-resolution image.')
@@ -123,6 +131,8 @@ FLAGS = flags.FLAGS
 # flags.mark_flag_as_required('data_dir')
 # flags.mark_flag_as_required('checkpoint_dir')
 
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="0" # GPU to run
 
 def main(_):
     # Fixed seed for repeatability
@@ -188,43 +198,42 @@ def main(_):
     isaac_app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
 
     # Register custom Isaac codelets
-    isaac_app.register({"pinhole_to_tensor": PinholeToTensor})
+    isaac_app.register({"differential_base_state": DifferentialBaseState})
 
-    g1 = tf.Graph()
-    with g1.as_default():
-        train_model = model.Model(data_dir=FLAGS.data_dir,
-                                  file_extension=FLAGS.file_extension,
-                                  is_training=True,
-                                  learning_rate=FLAGS.learning_rate,
-                                  beta1=FLAGS.beta1,
-                                  reconstr_weight=FLAGS.reconstr_weight,
-                                  smooth_weight=FLAGS.smooth_weight,
-                                  ssim_weight=FLAGS.ssim_weight,
-                                  icp_weight=FLAGS.icp_weight,
-                                  batch_size=FLAGS.batch_size,
-                                  img_height=FLAGS.img_height,
-                                  img_width=FLAGS.img_width,
-                                  seq_length=FLAGS.seq_length,
-                                  architecture=FLAGS.architecture,
-                                  imagenet_norm=FLAGS.imagenet_norm,
-                                  weight_reg=FLAGS.weight_reg,
-                                  exhaustive_mode=FLAGS.exhaustive_mode,
-                                  random_scale_crop=FLAGS.random_scale_crop,
-                                  flipping_mode=FLAGS.flipping_mode,
-                                  depth_upsampling=FLAGS.depth_upsampling,
-                                  depth_normalization=FLAGS.depth_normalization,
-                                  compute_minimum_loss=FLAGS.compute_minimum_loss,
-                                  use_skip=FLAGS.use_skip,
-                                  joint_encoder=FLAGS.joint_encoder,
-                                  handle_motion=FLAGS.handle_motion,
-                                  equal_weighting=FLAGS.equal_weighting,
-                                  size_constraint_weight=FLAGS.size_constraint_weight,
-                                  isaac_app=isaac_app)
+    train_model = model.Model(data_dir=FLAGS.data_dir,
+                              file_extension=FLAGS.file_extension,
+                              is_training=True,
+                              learning_rate=FLAGS.learning_rate,
+                              beta1=FLAGS.beta1,
+                              reconstr_weight=FLAGS.reconstr_weight,
+                              smooth_weight=FLAGS.smooth_weight,
+                              ssim_weight=FLAGS.ssim_weight,
+                              icp_weight=FLAGS.icp_weight,
+                              batch_size=FLAGS.batch_size,
+                              img_height=FLAGS.img_height,
+                              img_width=FLAGS.img_width,
+                              seq_length=FLAGS.seq_length,
+                              architecture=FLAGS.architecture,
+                              imagenet_norm=FLAGS.imagenet_norm,
+                              weight_reg=FLAGS.weight_reg,
+                              exhaustive_mode=FLAGS.exhaustive_mode,
+                              random_scale_crop=FLAGS.random_scale_crop,
+                              flipping_mode=FLAGS.flipping_mode,
+                              depth_upsampling=FLAGS.depth_upsampling,
+                              depth_normalization=FLAGS.depth_normalization,
+                              compute_minimum_loss=FLAGS.compute_minimum_loss,
+                              use_skip=FLAGS.use_skip,
+                              joint_encoder=FLAGS.joint_encoder,
+                              shuffle=True,
+                              handle_motion=FLAGS.handle_motion,
+                              equal_weighting=FLAGS.equal_weighting,
+                              size_constraint_weight=FLAGS.size_constraint_weight,
+                              isaac_app=isaac_app)
 
-        train(train_model, FLAGS.pretrained_ckpt, FLAGS.imagenet_ckpt,
-              FLAGS.checkpoint_dir, FLAGS.train_steps, FLAGS.summary_freq)
+    train(train_model, FLAGS.pretrained_ckpt, FLAGS.imagenet_ckpt,
+          FLAGS.checkpoint_dir, FLAGS.train_steps, FLAGS.summary_freq)
 
-
+save_checkpoint = 100
 def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
           train_steps, summary_freq):
     """Train model."""
@@ -245,12 +254,13 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     with sv.managed_session(config=config) as sess:
+
         if pretrained_ckpt is not None or imagenet_ckpt:
             logging.info('Restoring pretrained weights from %s', ckpt_path)
             pretrain_restorer.restore(sess, ckpt_path)
 
         logging.info('Attempting to resume training from %s...', checkpoint_dir)
-        checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
+        checkpoint = tf.train.latest_checkpoint('/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts_sim/')
         logging.info('Last checkpoint found: %s', checkpoint)
         if checkpoint:
             saver.restore(sess, checkpoint)
@@ -260,7 +270,8 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
         last_summary_time = time.time()
         steps_per_epoch = train_model.reader.steps_per_epoch
         step = 1
-        while step <= train_steps:
+        while step < train_steps:
+
             fetches = {
                 'train': train_model.train_op,
                 'global_step': train_model.global_step,
@@ -284,7 +295,7 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
                     train_epoch, train_step, steps_per_epoch, this_cycle,
                     time.time() - start_time, results['loss'])
 
-            if step % steps_per_epoch == 0:
+            if step % save_checkpoint == 0:
                 logging.info('[*] Saving checkpoint to %s...', checkpoint_dir)
                 saver.save(sess, os.path.join(checkpoint_dir, 'model'),
                            global_step=global_step)
