@@ -39,6 +39,9 @@ from engine.pyalice import *
 import packages.ml
 # from pinhole_to_tensor import PinholeToTensor
 
+# Automatically parallelize tf.mapping function to maximize efficiency
+AUTOTUNE = tf.data.experimental.AUTOTUNE
+
 # Imagenet mean and standard deviation
 # See nets.encoder_resnet as reference for below input-normalizing constants.
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
