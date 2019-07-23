@@ -48,7 +48,7 @@ MAX_TO_KEEP = 1000000  # Maximum number of checkpoints to keep.
 # Isaac Sim flags
 flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter.graph.json",
                     'Where the isaac SDK app graph is stored')
-flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter.config.json",
+flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter_server.config.json",
                     'Where the isaac SDK app node configuration is stored')
 
 # Tensorflow flags
@@ -64,7 +64,7 @@ flags.DEFINE_float('icp_weight', 0.0, 'ICP loss weight.')
 flags.DEFINE_float('size_constraint_weight', 0.0005, 'Weight of the object '
                                                      'size constraint loss. Use only when motion handling is '
                                                      'enabled.')
-flags.DEFINE_integer('batch_size', 5, 'The size of a sample batch')
+flags.DEFINE_integer('batch_size', 1, 'The size of a sample batch')
 flags.DEFINE_integer('img_height', 128, 'Input frame height.')
 flags.DEFINE_integer('img_width', 416, 'Input frame width.')
 flags.DEFINE_integer('seq_length', 3, 'Number of frames in sequence.')
@@ -92,10 +92,10 @@ flags.DEFINE_enum('flipping_mode', reader.FLIP_RANDOM,
                   'always or never, respectively.')
 flags.DEFINE_string('pretrained_ckpt', None, 'Path to checkpoint with '
                                              'pretrained weights.  Do not include .data* extension.')
-flags.DEFINE_string('imagenet_ckpt', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt', 'Initialize the weights according '
+flags.DEFINE_string('imagenet_ckpt', '/data/repositories/isaac/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt', 'Initialize the weights according '
                                            'to an ImageNet-pretrained checkpoint. Requires '
                                            'architecture to be ResNet-18.')
-flags.DEFINE_string('checkpoint_dir', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts_sim',
+flags.DEFINE_string('checkpoint_dir', '/data/repositories/isaac_ckpts/ckpts_1/',
                     'Directory to save model '
                     'checkpoints.')
 flags.DEFINE_integer('train_steps', 10000000, 'Number of training steps.')
@@ -260,7 +260,7 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
             pretrain_restorer.restore(sess, ckpt_path)
 
         logging.info('Attempting to resume training from %s...', checkpoint_dir)
-        checkpoint = tf.train.latest_checkpoint('/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts_sim/')
+        checkpoint = tf.train.latest_checkpoint('/data/repositories/isaac_ckpts/ckpts_1/')
         logging.info('Last checkpoint found: %s', checkpoint)
         if checkpoint:
             saver.restore(sess, checkpoint)

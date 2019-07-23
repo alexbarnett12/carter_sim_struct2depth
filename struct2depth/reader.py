@@ -33,7 +33,7 @@ import util
 from process_image import ImageProcessor
 
 # Isaac SDK imports
-ROOT_DIR = os.path.abspath("/mnt/isaac/") # Root directory of the Isaac
+ROOT_DIR = os.path.abspath("/data/repositories/isaac/") # Root directory of the Isaac
 sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 import packages.ml
@@ -96,7 +96,7 @@ class DataReader(object):
 
     # Retrieve current robot linear and angular speed from Isaac Sim
     def update_speed(self):
-        with open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
+        with open('/data/repositories/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
                 csv_reader = csv.reader(speed_file, delimiter=',')
                 for row in csv_reader:
                     self.speed = float(row[0])

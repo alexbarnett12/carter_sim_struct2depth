@@ -94,7 +94,7 @@ py_binary(
         "pinhole_to_tensor.config.json",
         "pinhole_to_tensor.graph.json",
         ":base_control.graph.json",
-        ":carter.config.json",
+        ":carter_server.config.json",
         ":carter.graph.json",
         ":navigation.config.json",
         ":navigation.graph.json",

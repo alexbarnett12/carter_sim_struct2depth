@@ -32,7 +32,7 @@ import sys
 # from struct2depth import reader_saved_images
 # from struct2depth import util
 
-ROOT_DIR = os.path.abspath("/mnt/isaac/apps/carter_sim_struct2depth/struct2depth")
+ROOT_DIR = os.path.abspath("/data/repositories/isaac/apps/carter_sim_struct2depth/struct2depth")
 sys.path.append(ROOT_DIR)
 import nets
 import project
