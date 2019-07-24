@@ -11,6 +11,8 @@ import cv2
 from struct2depth.process_image import ImageProcessor
 import time
 import csv
+from absl import logging
+import datetime
 
 # Root directory of the Isaac
 ROOT_DIR = os.path.abspath("/mnt/isaac")
@@ -32,8 +34,9 @@ TIME_DELAY = 0.25 # seconds
 
 OUTPUT_DIR = 'synth_images'
 
-# Number of samples to acquire at a time from Isaac sim
-kSampleNumbers = 1
+# Number of samples Isaac Sim should accumulate
+buffer_size = 500
+sample_num = 1
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -75,17 +78,15 @@ while True:
     # Retrieve rgb images from isaac sim
     while True:
         num = bridge.get_sample_number()
-        if num >= kSampleNumbers:
+        if num >= buffer_size:
             break
         time.sleep(1.0)
         print("waiting for samples: {}".format(num))
 
-    images = bridge.acquire_samples(kSampleNumbers)
+    images = bridge.acquire_samples(sample_num)
     # print("{} Samples acquired".format(kSampleNumbers))
 
     # Retrieve differential base speed from file
-    # speed = []
-    # angular_speed = []
     with open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
         csv_reader = csv.reader(speed_file, delimiter=',')
         for row in csv_reader:
@@ -111,10 +112,10 @@ while True:
 
             # Save to directory
             cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/synth_images_25_delay/{}.png'.format(count), np.uint8(big_img))
-            # cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/synth_images_seg/{}-fseg.png'.format(count), big_seg_img)
-            # f = open('/mnt/isaac/apps/carter_sim_struct2depth/synth_images_intrinsics/{}.csv'.format(count), 'w')
-            # f.write(intrinsics)
-            # f.close()
+            cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/synth_images_seg/{}-fseg.png'.format(count), big_seg_img)
+            f = open('/mnt/isaac/apps/carter_sim_struct2depth/synth_images_intrinsics/{}.csv'.format(count), 'w')
+            f.write(intrinsics)
+            f.close()
 
             print('saved images')
 
