@@ -64,7 +64,7 @@ flags.DEFINE_float('icp_weight', 0.0, 'ICP loss weight.')
 flags.DEFINE_float('size_constraint_weight', 0.0005, 'Weight of the object '
                                                      'size constraint loss. Use only when motion handling is '
                                                      'enabled.')
-flags.DEFINE_integer('batch_size', 1, 'The size of a sample batch')
+flags.DEFINE_integer('batch_size', 32, 'The size of a sample batch')
 flags.DEFINE_integer('img_height', 128, 'Input frame height.')
 flags.DEFINE_integer('img_width', 416, 'Input frame width.')
 flags.DEFINE_integer('seq_length', 3, 'Number of frames in sequence.')
@@ -233,7 +233,7 @@ def main(_):
     train(train_model, FLAGS.pretrained_ckpt, FLAGS.imagenet_ckpt,
           FLAGS.checkpoint_dir, FLAGS.train_steps, FLAGS.summary_freq)
 
-save_checkpoint = 100
+save_checkpoint = 20
 def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
           train_steps, summary_freq):
     """Train model."""
