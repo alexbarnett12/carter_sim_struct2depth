@@ -21,15 +21,10 @@ class ImageProcessor:
 
 
     def create_triplet(self, images):
-
         ORIGINAL_HEIGHT, ORIGINAL_WIDTH, _, = images[0].shape
-        zoom_x = WIDTH / ORIGINAL_WIDTH
-        zoom_y = HEIGHT / ORIGINAL_HEIGHT
-
 
         big_img = np.zeros(shape=(HEIGHT, WIDTH*SEQ_LENGTH, 3))
         wct = 0
-
 
         for img in images:
 
@@ -65,7 +60,6 @@ class ImageProcessor:
         #     big_seg_img[:, k * WIDTH:(k + 1) * WIDTH] = seg_list[k]
 
         return big_seg_img
-
 
 
     def process_image(self, images):

@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 import os
 import sys
-import numpy as np
 
 # Root directory of the Isaac
 ROOT_DIR = os.path.abspath("/usr/local/lib/isaac")

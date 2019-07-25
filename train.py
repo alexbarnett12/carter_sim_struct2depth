@@ -233,7 +233,7 @@ def main(_):
     train(train_model, FLAGS.pretrained_ckpt, FLAGS.imagenet_ckpt,
           FLAGS.checkpoint_dir, FLAGS.train_steps, FLAGS.summary_freq)
 
-save_checkpoint = 100
+save_checkpoint = 1
 def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
           train_steps, summary_freq):
     """Train model."""

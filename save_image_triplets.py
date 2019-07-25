@@ -99,7 +99,7 @@ while True:
     if speed > 0.1 or angular_speed > 0.15:
         while np.shape(images)[0] < 3:
             time.sleep(TIME_DELAY)
-            images = np.concatenate((images, bridge.acquire_samples(kSampleNumbers)))
+            images = np.concatenate((images, bridge.acquire_samples(sample_num)))
 
         # Create wide image and segmentation triplets
         image_seq = []

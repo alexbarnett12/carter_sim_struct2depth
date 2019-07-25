@@ -33,10 +33,11 @@ import util
 from process_image import ImageProcessor
 
 # Isaac SDK imports
-ROOT_DIR = os.path.abspath("/mnt/isaac/") # Root directory of the Isaac
+ROOT_DIR = os.path.abspath("/mnt/isaac/")  # Root directory of the Isaac
 sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 import packages.ml
+
 # from pinhole_to_tensor import PinholeToTensor
 
 # Automatically parallelize tf.mapping function to maximize efficiency
@@ -58,11 +59,11 @@ INPUT_NAME = 'input'
 OUTPUT_NAME = 'output'
 
 # Variables to set
-SEQ_LENGTH = 3 # Number of images in stack. Currently only works with 3
-HEIGHT = 128 # Image height
-WIDTH = 416 # Image width
-TRIPLET_WIDTH = WIDTH * SEQ_LENGTH # Width of wide image created to pair images in time
-REPEAT = 10000000
+SEQ_LENGTH = 3  # Number of images in stack. Currently only works with 3
+HEIGHT = 128  # Image height
+WIDTH = 416  # Image width
+TRIPLET_WIDTH = WIDTH * SEQ_LENGTH  # Width of wide image created to pair images in time
+TIME_DELAY = 0.25  # Seconds
 FLIP_RANDOM = 'random'  # Always perform random flipping of input images.
 FLIP_ALWAYS = 'always'  # Always flip image input, used for test augmentation.
 FLIP_NONE = 'none'  # Always disables flipping.
@@ -70,6 +71,8 @@ FLIP_NONE = 'none'  # Always disables flipping.
 # Number of samples to acquire at a time from Isaac Sim. Most likely want to keep this at 1.
 kSampleNumbers = 1
 
+
+# TODO: Update pipeline to take batches from generator as opposed to single images
 class DataReader(object):
     """Reads stored sequences which are produced by dataset/gen_data.py."""
 
@@ -78,6 +81,7 @@ class DataReader(object):
                  random_color, imagenet_norm, shuffle, input_file='train', isaac_app=None):
         self.data_dir = data_dir
         self.batch_size = batch_size
+        self.sample_numbers = kSampleNumbers
         self.img_height = img_height
         self.img_width = img_width
         self.seq_length = seq_length
@@ -97,40 +101,32 @@ class DataReader(object):
     # Retrieve current robot linear and angular speed from Isaac Sim
     def update_speed(self):
         with open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
-                csv_reader = csv.reader(speed_file, delimiter=',')
-                for row in csv_reader:
+            csv_reader = csv.reader(speed_file, delimiter=',')
+            for row in csv_reader:
+                if len(row) == 2:
                     self.speed = float(row[0])
                     self.angular_speed = float(row[1])
-                    # print("{}, {}".format(self.speed, self.angular_speed))
 
     # Check if Isaac Sim bridge has samples
     def has_samples(self, bridge):
-        return bridge.get_sample_number() >= kSampleNumbers
+        return bridge.get_sample_number() >= self.sample_numbers
 
+    # Create a training sample generator from Isaac Sim.
+    # bridge is the SampleAccumulator node that feeds image data
+    # Returns a generator function that yields batches of training examples.
     def get_generator(self, bridge, img_processor):
-        """Create a training sample generator.
-
-        Args:
-          bridge: the isaac sample accumulator node which we will acquire samples from
-
-        Returns:
-          A generator function which yields a single training example.
-      """
 
         def _generator(self):
-            # Indefinitely yield samples.
+            # Infinitely generate training images
             while True:
+
+                # lists to hold image batches
+                image_batch = np.zeros((0, self.img_height, self.img_width * self.seq_length, 3))
+                seg_mask_batch = np.zeros((0, self.img_height, self.img_width * self.seq_length, 3))
 
                 # Wait until we get enough samples from Isaac
                 while not self.has_samples(bridge):
-                    time.sleep(1.0)
-                # while True:
-                #     num = bridge.get_sample_number()
-                #     if num >= kSampleNumbers:
-                #         break
-                #     time.sleep(1.0)
-                #     # logging.info("waiting for enough samples: {}".format(num))
-                images = bridge.acquire_samples(kSampleNumbers)
+                    time.sleep(TIME_DELAY)
 
                 # Retrieve current robot linear and angular speed
                 self.update_speed()
@@ -138,40 +134,44 @@ class DataReader(object):
 
                 # Only save image if the robot is moving or rotating above a threshold speed
                 # Images below these thresholds do not have a great enough disparity for the network to learn depth.
-                if self.speed > 0.1 or self.angular_speed > 0.15:
-                    while np.shape(images)[0] < 3:
-                        time.sleep(.25)
+                if self.speed > 0.1 and self.angular_speed > 0.15:
+                    images = []
+                    # Retrieve a total of (batch_size * seq_length) images
+                    for i in range(self.batch_size * SEQ_LENGTH):
                         while not self.has_samples(bridge):
-                            time.sleep(.25)
-                        # print(np.shape(images))
-                        test = bridge.acquire_samples(kSampleNumbers)
-                        # print(np.shape(test))
-                        images = np.concatenate((images, test))
-
-                    # # Try to acquire a sample.
-                    # # If none are available, then wait for a bit so we do not spam the app.
-                    # # Samples are received as (128 x 416 x 3) float32 images in the range of 0-255.
-                    # # They will be pre-processed to be in the range 0-1 for training.
-                    # sample = bridge.acquire_samples(kSampleNumbers)
-                    # if not sample:
-                    #     time.sleep(1)
-                    #     continue
-
-                    # print(np.shape(sample))
+                            time.sleep(TIME_DELAY)
+                        images.append(
+                            np.squeeze(bridge.acquire_samples(self.sample_numbers)))  # Acquire one image as a list
+                        time.sleep(TIME_DELAY)
 
                     # Create wide image and segmentation triplets
                     # TODO: Turn seg mask generator into an Isaac node
                     # TODO: Fix MRCNN to work within another tf.Graph()
-                    image_seq, seg_mask_seq = img_processor.process_image(np.array([images[0][0],
-                                                                                    images[1][0],
-                                                                                    images[2][0]]))
+                    i = 0
+                    while i < self.batch_size * SEQ_LENGTH:
+                        image_seq, seg_mask_seq = img_processor.process_image([images[i],
+                                                                               images[i + 1],
+                                                                               images[i + 2]])
+
+                        # Add to total image lists
+                        image_batch = np.append(image_batch, np.expand_dims(image_seq, axis=0), axis=0)
+                        seg_mask_batch = np.append(seg_mask_batch, np.expand_dims(seg_mask_seq, axis=0), axis=0)
+                        i += 3
 
                     # TODO: Retrieve camera mat from Isaac instead of manually input
-                    intrinsics = np.array([[208, 0, 208], [0, 113.778, 64], [0, 0, 1]], dtype=np.float32) # Scaled properly
+                    intrinsics = np.array([[208., 0., 208.], [0., 113.778, 64.], [0., 0., 1.]])  # Scaled properly
+                    intrinsics_batch = np.repeat(intrinsics[None, :], repeats=self.batch_size, axis=0)  # Create batch
 
-                    yield {COLOR_IMAGE: image_seq,
-                           SEG_MASK: seg_mask_seq,
-                           INTRINSICS: intrinsics}
+                    # Shuffle batch elements to reduce overfitting
+                    np.random.seed(2)
+                    np.random.shuffle(image_batch)
+                    np.random.shuffle(seg_mask_batch)
+                    np.random.shuffle(intrinsics_batch)\
+
+                    # Yield batches
+                    yield {COLOR_IMAGE: np.array(image_batch),
+                           SEG_MASK: np.array(seg_mask_batch),
+                           INTRINSICS: intrinsics_batch}
 
         return lambda: _generator(self)
 
@@ -191,9 +191,9 @@ class DataReader(object):
                 SEG_MASK: tf.uint8,
                 INTRINSICS: tf.float32,
             }, {
-                COLOR_IMAGE: (HEIGHT, TRIPLET_WIDTH, 3),
-                SEG_MASK: (HEIGHT, TRIPLET_WIDTH, 3),
-                INTRINSICS: (3, 3),
+                COLOR_IMAGE: (self.batch_size, HEIGHT, TRIPLET_WIDTH, 3),
+                SEG_MASK: (self.batch_size, HEIGHT, TRIPLET_WIDTH, 3),
+                INTRINSICS: (self.batch_size, 3, 3),
             })
 
         return dataset
@@ -249,7 +249,8 @@ class DataReader(object):
                 random_flipping = (self.flipping_mode == FLIP_RANDOM)
                 with tf.name_scope('image_augmentation_flip'):
                     # Create image flipper
-                    flipper = Flipper(image_width=self.img_width, randomized=random_flipping)
+                    flipper = Flipper(image_width=self.img_width, batch_size=self.batch_size,
+                                      randomized=random_flipping)
 
                     # Flip images, seg masks, and intrinsics randomly or completely, depending on random_flipping
                     image_stack_ds = image_stack_ds.map(flipper.flip_images, num_parallel_calls=AUTOTUNE)
@@ -258,6 +259,7 @@ class DataReader(object):
 
                     logging.info("Images flipped and intrinsics adjusted")
 
+            # TODO: Make this functional
             # Randomly scale and crop images
             if self.random_scale_crop:
                 with tf.name_scope('image_augmentation_scale_crop'):
@@ -294,27 +296,6 @@ class DataReader(object):
             time.sleep(1.0)
             logging.info("waiting for enough samples: {}".format(num))
 
-        # Shuffle and batch datasets
-        with tf.name_scope('batching'):
-            if self.shuffle:
-                image_stack_ds = image_stack_ds.shuffle(buffer_size=self.batch_size, seed=2)\
-                    .batch(self.batch_size, drop_remainder=True)
-                image_stack_norm = image_stack_norm.shuffle(buffer_size=self.batch_size, seed=2)\
-                    .batch(self.batch_size, drop_remainder=True)
-                seg_stack_ds = seg_stack_ds.shuffle(buffer_size=self.batch_size, seed=2)\
-                    .batch(self.batch_size, drop_remainder=True)
-                intrinsics_ds = intrinsics_ds.shuffle(buffer_size=self.batch_size, seed=2)\
-                    .batch(self.batch_size, drop_remainder=True)
-                intrinsics_inv = intrinsics_inv.shuffle(buffer_size=self.batch_size, seed=2)\
-                    .batch(self.batch_size, drop_remainder=True)
-
-            else:
-                image_stack_ds = image_stack_ds.batch(self.batch_size)
-                image_stack_norm = image_stack_norm.batch(self.batch_size)
-                seg_stack_ds = seg_stack_ds.batch(self.batch_size)
-                intrinsics_ds = intrinsics_ds.batch(self.batch_size)
-                intrinsics_inv = intrinsics_inv.batch(self.batch_size)
-
         # Create iterators over datasets
         image_it = image_stack_ds.make_one_shot_iterator().get_next()
         image_norm_it = image_stack_norm.make_one_shot_iterator().get_next()
@@ -335,16 +316,15 @@ class DataReader(object):
                 intrinsics_it,
                 intrinsics_inv_it)
 
-
     # Unpack image triplet from [h, w * seq_length, 3] -> [h, w, 3 * seq_length] image stack.
     def unpack_images(self, image_seq):
         with tf.name_scope('unpack_images'):
             image_list = [
-                image_seq[:, i * self.img_width:(i + 1) * self.img_width, :]
+                image_seq[:, :, i * self.img_width:(i + 1) * self.img_width, :]
                 for i in range(self.seq_length)
             ]
-            image_stack = tf.concat(image_list, axis=2)
-            image_stack.set_shape([self.img_height, self.img_width, self.seq_length * 3])
+            image_stack = tf.concat(image_list, axis=3)
+            image_stack.set_shape([self.batch_size, self.img_height, self.img_width, self.seq_length * 3])
         return image_stack
 
     # Randomly augment the brightness contrast, saturation, and hue of the image.
@@ -387,19 +367,22 @@ class DataReader(object):
         image_stack_aug = tf.clip_by_value(image_stack_aug, 0, 1)
         return image_stack_aug
 
-
     # Creates multi scale intrinsics based off number of scales provided.
     def get_multi_scale_intrinsics(self, intrinsics):
+        intrinsics_ds_multi_scale = []
         intrinsics_multi_scale = []
         # Scale the intrinsics accordingly for each scale
-        for s in range(self.num_scales):
-            fx = intrinsics[0, 0] / (2 ** s)
-            fy = intrinsics[1, 1] / (2 ** s)
-            cx = intrinsics[0, 2] / (2 ** s)
-            cy = intrinsics[1, 2] / (2 ** s)
-            intrinsics_multi_scale.append(make_intrinsics_matrix(fx, fy, cx, cy))
-        intrinsics_multi_scale = tf.stack(intrinsics_multi_scale)
-        return intrinsics_multi_scale
+        for x in range(self.batch_size):
+            intrinsics_multi_scale = []
+            for s in range(self.num_scales):
+                fx = intrinsics[x, 0, 0] / (2 ** s)
+                fy = intrinsics[x, 1, 1] / (2 ** s)
+                cx = intrinsics[x, 0, 2] / (2 ** s)
+                cy = intrinsics[x, 1, 2] / (2 ** s)
+                intrinsics_multi_scale.append(make_intrinsics_matrix(fx, fy, cx, cy))
+            intrinsics_ds_multi_scale.append(intrinsics_multi_scale)
+        intrinsics_ds_multi_scale = tf.stack(intrinsics_ds_multi_scale)
+        return intrinsics_ds_multi_scale
 
     # Normalize the image by the Imagenet mean and standard deviation.
     # This aligns the training dataset with the pre-trained Imagenet model, and allows
@@ -412,13 +395,16 @@ class DataReader(object):
             tf.constant(IMAGENET_SD), multiples=[SEQ_LENGTH])
         return (image_stack - im_mean) / im_sd
 
+
 # Class for flipping images, seg masks, and intrinsics
 # Provides greater variety in training dataset to avoid overfitting
 class Flipper:
     def __init__(self,
                  image_width=416,
+                 batch_size=1,
                  randomized=True):
         self.randomized = randomized
+        self.batch_size = batch_size
         self.img_width = image_width  # Assumes all input images are the same size
 
     # Randomly flips the image horizontally.
@@ -440,13 +426,6 @@ class Flipper:
     # Randomly flips intrinsics.
     def flip_intrinsics(self, intrinsics):
 
-        def flip(intrinsics, in_w):
-            fx = intrinsics[0, 0]
-            fy = intrinsics[1, 1]
-            cx = in_w - intrinsics[0, 2]
-            cy = intrinsics[1, 2]
-            return make_intrinsics_matrix(fx, fy, cx, cy)
-
         if self.randomized:
             # Generate random probability. Seed provided to ensure that image,
             # seg mask, and intrinsics are paired
@@ -456,9 +435,13 @@ class Flipper:
         else:
             predicate = tf.less(0.0, 0.5)
 
-        return tf.cond(predicate,
-                       lambda: flip(intrinsics, self.img_width),
-                       lambda: intrinsics)
+        intrinsics_flipped = tf.map_fn(lambda x: tf.cond(predicate,
+                                                         lambda: make_intrinsics_matrix(x[0, 0], x[1, 1],
+                                                                                        self.img_width - x[0, 2],
+                                                                                        x[1, 2]),
+                                                         lambda: x), intrinsics)
+
+        return intrinsics_flipped
 
 
 # Class for cropping images. First scales them to provide a greater area
@@ -469,15 +452,14 @@ class Cropper:
                  image_height=128):
         self.orig_img_width = image_width
         self.orig_img_height = image_height
-        self.scaled_img_width = image_width # New image width before cropping to original dimensions
-        self.scaled_img_height = image_height # New image height before cropping to original dimensions
+        self.scaled_img_width = image_width  # New image width before cropping to original dimensions
+        self.scaled_img_height = image_height  # New image height before cropping to original dimensions
 
     # Scale and crop image.
     def scale_and_crop_image(self, im):
         im = self.scale_images_randomly(im)
         im = self.crop_images_randomly(im)
         return im
-
 
     # Scale image randomly. Seed used to match corresponding image, seg mask, and intrinsics.
     # Scales to a random number with greater dimensions than the original.
@@ -489,10 +471,8 @@ class Cropper:
         self.scaled_img_width = tf.cast(self.orig_img_width * x_scaling, dtype=tf.int32)
 
         # Add batch to resize the image area, then revert back
-        im = tf.expand_dims(im, 0)
         im = tf.image.resize_area(im, [self.scaled_img_height, self.scaled_img_width])
         return im[0]
-
 
     # Crop image randomly. Outputs image with its original height and width.
     def crop_images_randomly(self, im):
@@ -502,7 +482,6 @@ class Cropper:
         im = tf.image.crop_to_bounding_box(im, offset_y, offset_x, self.orig_img_height, self.orig_img_width)
         return im
 
-
     # Scales and crops intrinsics, keeping them matched with their corresponding image stacks.
     # Make sure to scale and crop images first, as the randomly scaled image widths and heights are needed to
     # scale and crop intrinsics.
@@ -510,7 +489,6 @@ class Cropper:
         intrinsics = self.scale_intrinsics_randomly(intrinsics)
         intrinsics = self.crop_intrinsics_randomly(intrinsics)
         return intrinsics
-
 
     # Scale intrinsics randomly. Seed used to match corresponding image, seg mask, and intrinsics.
     def scale_intrinsics_randomly(self, intrinsics):
@@ -523,7 +501,6 @@ class Cropper:
         cx = intrinsics[0, 2] * x_scaling
         cy = intrinsics[1, 2] * y_scaling
         return make_intrinsics_matrix(fx, fy, cx, cy)
-
 
     # Crop intrinsics randomly. It is assumed that the images has already been cropped, so that
     # the scaled image height and width are already known and saved in class state.
@@ -548,6 +525,7 @@ def make_intrinsics_matrix(fx, fy, cx, cy):
     intrinsics = tf.stack([r1, r2, r3])
     return intrinsics
 
+
 # Helper function for splitting tf datasets into sub-datasets.
 def split_datasets(dataset):
     subsets = {}
@@ -556,4 +534,3 @@ def split_datasets(dataset):
         subsets[name] = dataset.map(lambda x: x[name])
 
     return subsets
-
