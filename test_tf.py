@@ -295,7 +295,7 @@ def get_multi_scale_intrinsics(intrinsics):
             cy = intrinsics[x, 1, 2] / (2 ** s)
             intrinsics_multi_scale.append(make_intrinsics_matrix(fx, fy, cx, cy))
         intrinsics_ds_multi_scale.append(intrinsics_multi_scale)
-    intrinsics_ds_multi_scale = tf.stack(intrinsics_multi_scale)
+    intrinsics_ds_multi_scale = tf.stack(intrinsics_ds_multi_scale)
     return intrinsics_ds_multi_scale
 
 
@@ -392,19 +392,15 @@ with tf.name_scope('preprocessing'):
             seg_stack_ds = seg_stack_ds.map(cropper.scale_and_crop_image, num_parallel_calls=AUTOTUNE)
             intrinsics_ds = intrinsics_ds.map(cropper.scale_and_crop_intrinsics, num_parallel_calls=AUTOTUNE)
 
-            for x in intrinsics_ds:
-                print(x)
             logging.info("Images scaled and cropped")
-    for x in intrinsics_ds:
-        print(x)
+
     # Adjust camera intrinsics to the correct scale and compute the inverse
     with tf.name_scope('multi_scale_intrinsics'):
         intrinsics_ds = intrinsics_ds.map(get_multi_scale_intrinsics, num_parallel_calls=AUTOTUNE)
         intrinsics_inv = intrinsics_ds.map(lambda x: tf.matrix_inverse(x), num_parallel_calls=AUTOTUNE)
 
         logging.info("Multi scale intrinsics received")
-    for x in intrinsics_inv:
-        print(x)
+
     # Normalize images by the Imagenet standard
     if IMAGENET_NORM:
         image_stack_norm = image_stack_ds.map(normalize_by_imagenet, num_parallel_calls=AUTOTUNE)
