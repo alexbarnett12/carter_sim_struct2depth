@@ -126,6 +126,7 @@ class DataReader(object):
             # Seg masks
             path_ds_seg = tf.data.Dataset.from_tensor_slices(all_image_paths_seg)
             seg_ds = path_ds_seg.map(load_and_preprocess_image, num_parallel_calls=AUTOTUNE)
+            seg_ds = seg_ds.map(lambda x: tf.cast(x, dtype=tf.uint8), num_parallel_calls=AUTOTUNE) # Must be uint8
 
             # Camera intrinsics
             record_defaults = [tf.float32] * 9
