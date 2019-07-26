@@ -29,7 +29,6 @@ class DifferentialBaseState(Codelet):
 
         # Combine into a string format
         combined_speed = "{}, {}".format(speed, angular_speed)
-        print(combined_speed)
 
         # Write to a file. Overwritten for each new speed change
         f = open('/data/repositories/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv', 'w')
