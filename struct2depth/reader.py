@@ -26,6 +26,7 @@ from absl import logging
 import tensorflow as tf
 import numpy as np
 import csv
+import cv2
 import time
 
 # Struct2depth imports
@@ -63,7 +64,7 @@ SEQ_LENGTH = 3  # Number of images in stack. Currently only works with 3
 HEIGHT = 128  # Image height
 WIDTH = 416  # Image width
 TRIPLET_WIDTH = WIDTH * SEQ_LENGTH  # Width of wide image created to pair images in time
-TIME_DELAY = 0.25  # Seconds
+TIME_DELAY = 0.2  # Seconds
 FLIP_RANDOM = 'random'  # Always perform random flipping of input images.
 FLIP_ALWAYS = 'always'  # Always flip image input, used for test augmentation.
 FLIP_NONE = 'none'  # Always disables flipping.
@@ -119,44 +120,47 @@ class DataReader(object):
         def _generator(self):
             # Infinitely generate training images
             while True:
-
-                # lists to hold image batches
+                # Arrays to hold image batches
                 image_batch = np.zeros((0, self.img_height, self.img_width * self.seq_length, 3))
                 seg_mask_batch = np.zeros((0, self.img_height, self.img_width * self.seq_length, 3))
 
                 # Wait until we get enough samples from Isaac
                 while not self.has_samples(bridge):
                     time.sleep(TIME_DELAY)
-
                 # Retrieve current robot linear and angular speed
                 self.update_speed()
-                # print("{}, {}".format(self.speed, self.angular_speed))
 
                 # Only save image if the robot is moving or rotating above a threshold speed
                 # Images below these thresholds do not have a great enough disparity for the network to learn depth.
-                if self.speed > 0.1 and self.angular_speed > 0.15:
+                if self.speed > 0.1 or self.angular_speed > 0.15:
                     images = []
                     # Retrieve a total of (batch_size * seq_length) images
-                    for i in range(self.batch_size * SEQ_LENGTH):
+                    for i in range(self.batch_size * self.seq_length):
+
+                        # Wait for images to accumulate
                         while not self.has_samples(bridge):
                             time.sleep(TIME_DELAY)
-                        images.append(
-                            np.squeeze(bridge.acquire_samples(self.sample_numbers)))  # Acquire one image as a list
+
+                        # Acquire image
+                        new_image = bridge.acquire_samples(self.sample_numbers)
+
+                        # Add image to list
+                        images.append(np.squeeze(new_image))
+
+                        # Wait to increase disparity between images
                         time.sleep(TIME_DELAY)
 
-                    # Create wide image and segmentation triplets
-                    # TODO: Turn seg mask generator into an Isaac node
-                    # TODO: Fix MRCNN to work within another tf.Graph()
-                    i = 0
-                    while i < self.batch_size * SEQ_LENGTH:
-                        image_seq, seg_mask_seq = img_processor.process_image([images[i],
-                                                                               images[i + 1],
-                                                                               images[i + 2]])
+                        # TODO: Turn seg mask generator into an Isaac node
+                        # TODO: Fix MRCNN to work within another tf.Graph()
+                        # Create wide image and segmentation triplets
+                        if i != 0 and (i + 1) % self.seq_length == 0:
+                            image_seq, seg_mask_seq = img_processor.process_image([images[i - 2],
+                                                                                   images[i - 1],
+                                                                                   images[i]])
 
-                        # Add to total image lists
-                        image_batch = np.append(image_batch, np.expand_dims(image_seq, axis=0), axis=0)
-                        seg_mask_batch = np.append(seg_mask_batch, np.expand_dims(seg_mask_seq, axis=0), axis=0)
-                        i += 3
+                            # Add to total image lists
+                            image_batch = np.append(image_batch, np.expand_dims(image_seq, axis=0), axis=0)
+                            seg_mask_batch = np.append(seg_mask_batch, np.expand_dims(seg_mask_seq, axis=0), axis=0)
 
                     # TODO: Retrieve camera mat from Isaac instead of manually input
                     intrinsics = np.array([[208., 0., 208.], [0., 113.778, 64.], [0., 0., 1.]])  # Scaled properly
@@ -166,7 +170,7 @@ class DataReader(object):
                     np.random.seed(2)
                     np.random.shuffle(image_batch)
                     np.random.shuffle(seg_mask_batch)
-                    np.random.shuffle(intrinsics_batch)\
+                    np.random.shuffle(intrinsics_batch)
 
                     # Yield batches
                     yield {COLOR_IMAGE: np.array(image_batch),
