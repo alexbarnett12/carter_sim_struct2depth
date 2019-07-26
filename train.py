@@ -64,7 +64,7 @@ flags.DEFINE_float('icp_weight', 0.0, 'ICP loss weight.')
 flags.DEFINE_float('size_constraint_weight', 0.0005, 'Weight of the object '
                                                      'size constraint loss. Use only when motion handling is '
                                                      'enabled.')
-flags.DEFINE_integer('batch_size', 32, 'The size of a sample batch')
+flags.DEFINE_integer('batch_size', 20, 'The size of a sample batch')
 flags.DEFINE_integer('img_height', 128, 'Input frame height.')
 flags.DEFINE_integer('img_width', 416, 'Input frame width.')
 flags.DEFINE_integer('seq_length', 3, 'Number of frames in sequence.')
