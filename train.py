@@ -95,7 +95,7 @@ flags.DEFINE_string('pretrained_ckpt', None, 'Path to checkpoint with '
 flags.DEFINE_string('imagenet_ckpt', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt', 'Initialize the weights according '
                                            'to an ImageNet-pretrained checkpoint. Requires '
                                            'architecture to be ResNet-18.')
-flags.DEFINE_string('checkpoint_dir', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts_sim',
+flags.DEFINE_string('checkpoint_dir', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts_25_new',
                     'Directory to save model '
                     'checkpoints.')
 flags.DEFINE_integer('train_steps', 10000000, 'Number of training steps.')
@@ -260,7 +260,7 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
             pretrain_restorer.restore(sess, ckpt_path)
 
         logging.info('Attempting to resume training from %s...', checkpoint_dir)
-        checkpoint = tf.train.latest_checkpoint('/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts_sim/')
+        checkpoint = tf.train.latest_checkpoint('/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts_25_new/')
         logging.info('Last checkpoint found: %s', checkpoint)
         if checkpoint:
             saver.restore(sess, checkpoint)
