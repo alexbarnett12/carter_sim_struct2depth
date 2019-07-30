@@ -100,7 +100,7 @@ class DataReader(object):
 
     # Retrieve current robot linear and angular speed from Isaac Sim
     def update_speed(self):
-        with open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
+        with open('/data/repositories/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
             csv_reader = csv.reader(speed_file, delimiter=',')
             for row in csv_reader:
                 if len(row) == 2:

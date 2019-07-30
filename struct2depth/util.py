@@ -200,7 +200,6 @@ def get_vars_to_save_and_restore(ckpt=None):
         # Check if shapes match.
         ind = ckpt_var_names.index(v.op.name)
         if ckpt_var_shapes[ind] == v.get_shape():
-          print("Shapes match!")
           mapping[v.op.name] = v
           # not_loaded.remove(v.op.name)
         else:
