@@ -26,8 +26,9 @@ from absl import logging
 import tensorflow as tf
 import numpy as np
 import csv
-import time
 import cv2
+import time
+
 # Struct2depth imports
 import util
 from process_image import ImageProcessor
@@ -72,7 +73,6 @@ FLIP_NONE = 'none'  # Always disables flipping.
 kSampleNumbers = 1
 
 
-# TODO: Update pipeline to take batches from generator as opposed to single images
 class DataReader(object):
     """Reads stored sequences which are produced by dataset/gen_data.py."""
 
@@ -100,7 +100,7 @@ class DataReader(object):
 
     # Retrieve current robot linear and angular speed from Isaac Sim
     def update_speed(self):
-        with open('/data/repositories/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
+        with open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
             csv_reader = csv.reader(speed_file, delimiter=',')
             for row in csv_reader:
                 if len(row) == 2:
@@ -114,7 +114,6 @@ class DataReader(object):
                         self.angular_speed = float(row[1])
                     except ValueError:
                         self.angular_speed = 0
-
     # Check if Isaac Sim bridge has samples
     def has_samples(self, bridge):
         return bridge.get_sample_number() >= self.sample_numbers
@@ -217,11 +216,6 @@ class DataReader(object):
             node = self.isaac_app.find_node_by_name("CarterTrainingSamples")
             bridge = packages.ml.SampleAccumulator(node)
 
-            # Start the application and Sight server
-            self.isaac_app.start_webserver()
-            self.isaac_app.start()
-            logging.info("Isaac application loaded")
-
             # Create image processor for generating triplets and seg masks
             img_processor = ImageProcessor()
             logging.info("Image Processor created")
@@ -298,14 +292,6 @@ class DataReader(object):
             else:
                 image_stack_norm = image_stack_ds
                 logging.info("Imagenet norm not used")
-
-        # Wait until we get enough samples from Isaac
-        while True:
-            num = bridge.get_sample_number()
-            if num >= kSampleNumbers:
-                break
-            time.sleep(1.0)
-            logging.info("waiting for enough samples: {}".format(num))
 
         # Create iterators over datasets
         image_it = image_stack_ds.make_one_shot_iterator().get_next()
