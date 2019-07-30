@@ -182,6 +182,7 @@ def get_vars_to_save_and_restore(ckpt=None):
     not_loaded = list(ckpt_var_names)
     for v in model_vars:
       if v.op.name not in ckpt_var_names:
+        not_loaded.append(v.op.name)
         # For backward compatibility, try additional matching.
         v_additional_name = v.op.name.replace('egomotion_prediction/', '')
         if v_additional_name in ckpt_var_names:
@@ -189,7 +190,7 @@ def get_vars_to_save_and_restore(ckpt=None):
           ind = ckpt_var_names.index(v_additional_name)
           if ckpt_var_shapes[ind] == v.get_shape():
             mapping[v_additional_name] = v
-            not_loaded.remove(v_additional_name)
+            not_loaded.remove(v.op.name)
             continue
           else:
             logging.warn('Shape mismatch, will not restore %s.', v.op.name)
@@ -199,8 +200,9 @@ def get_vars_to_save_and_restore(ckpt=None):
         # Check if shapes match.
         ind = ckpt_var_names.index(v.op.name)
         if ckpt_var_shapes[ind] == v.get_shape():
+          print("Shapes match!")
           mapping[v.op.name] = v
-          not_loaded.remove(v.op.name)
+          # not_loaded.remove(v.op.name)
         else:
           logging.warn('Shape mismatch, will not restore %s.', v.op.name)
     if not_loaded:
@@ -218,6 +220,7 @@ def get_imagenet_vars_to_restore(imagenet_ckpt):
   vars_to_restore_imagenet = {}
   ckpt_var_names = tf.contrib.framework.list_variables(imagenet_ckpt)
   ckpt_var_names = [name for (name, unused_shape) in ckpt_var_names]
+  print("Imagenet checkpoint variables: {}".format(ckpt_var_names))
   model_vars = tf.global_variables()
   for v in model_vars:
     if 'global_step' in v.op.name: continue
@@ -226,6 +229,7 @@ def get_imagenet_vars_to_restore(imagenet_ckpt):
     mvname_noprefix = mvname_noprefix.replace('moving_variance', 'sigma')
     if mvname_noprefix in ckpt_var_names:
       vars_to_restore_imagenet[mvname_noprefix] = v
+      print("Restored!")
     else:
       logging.info('The following variable will not be restored from '
                    'pretrained ImageNet-checkpoint: %s', mvname_noprefix)
