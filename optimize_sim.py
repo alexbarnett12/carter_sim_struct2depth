@@ -67,7 +67,7 @@ SAVE_EVERY = 1  # Defines the interval that predictions should be saved at.
 SAVE_PREVIEWS = True  # If set, while save image previews of depth predictions.
 FIXED_SEED = 8964  # Fixed seed for repeatability.
 
-flags.DEFINE_string('output_dir', '/mnt/isaac/apps/carter_sim_struct2depth/results/results_sim_ft_20', 'Directory to store predictions. '
+flags.DEFINE_string('output_dir', '/data/repositories/isaac/apps/carter_sim_struct2depth/results/results_sim_ft_5', 'Directory to store predictions. '
                                                          'Assumes that regular inference has been executed before '
                                                          'and results were stored in this folder.')
 flags.DEFINE_string('data_dir', None, 'Folder pointing to preprocessed '
@@ -88,7 +88,7 @@ flags.DEFINE_string('triplet_list_file_remains', None, 'Optional text file '
                                                        'optional to specify a different path to take and store '
                                                        'the unrefined prediction from/to.')
 flags.DEFINE_string('model_ckpt',
-                    '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt',
+                    '/data/repositories/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt',
                     'Model checkpoint to optimize.')
 flags.DEFINE_string('ft_name', '', 'Optional prefix for temporary files.')
 flags.DEFINE_string('file_extension', 'png', 'Image data file extension.')
