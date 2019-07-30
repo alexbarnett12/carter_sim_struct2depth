@@ -127,7 +127,6 @@ class DataReader(object):
         def _generator(self):
             # Infinitely generate training images
             while True:
-
                 # Arrays to hold image batches
                 image_batch = np.zeros((0, self.img_height, self.img_width * self.seq_length, 3))
                 seg_mask_batch = np.zeros((0, self.img_height, self.img_width * self.seq_length, 3))
