@@ -155,8 +155,8 @@ py_binary(
     ],
     data = [
         ":base_control.graph.json",
-        ":carter_save.config.json",
-        ":carter_save.graph.json",
+        ":carter_server_2.config.json",
+        ":carter.graph.json",
         ":navigation.config.json",
         ":navigation.graph.json",
         "//apps/assets/maps",
