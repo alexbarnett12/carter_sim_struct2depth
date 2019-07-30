@@ -73,7 +73,6 @@ FLIP_NONE = 'none'  # Always disables flipping.
 kSampleNumbers = 1
 
 
-# TODO: Update pipeline to take batches from generator as opposed to single images
 class DataReader(object):
     """Reads stored sequences which are produced by dataset/gen_data.py."""
 
@@ -105,9 +104,16 @@ class DataReader(object):
             csv_reader = csv.reader(speed_file, delimiter=',')
             for row in csv_reader:
                 if len(row) == 2:
-                    self.speed = float(row[0])
-                    self.angular_speed = float(row[1])
-
+                    try:
+                        float(row[0])
+                        self.speed = float(row[0])
+                    except ValueError:
+                        self.speed = 0
+                    try:
+                        float(row[1])
+                        self.angular_speed = float(row[1])
+                    except ValueError:
+                        self.angular_speed = 0
     # Check if Isaac Sim bridge has samples
     def has_samples(self, bridge):
         return bridge.get_sample_number() >= self.sample_numbers
@@ -210,11 +216,6 @@ class DataReader(object):
             node = self.isaac_app.find_node_by_name("CarterTrainingSamples")
             bridge = packages.ml.SampleAccumulator(node)
 
-            # Start the application and Sight server
-            self.isaac_app.start_webserver()
-            self.isaac_app.start()
-            logging.info("Isaac application loaded")
-
             # Create image processor for generating triplets and seg masks
             img_processor = ImageProcessor()
             logging.info("Image Processor created")
@@ -291,14 +292,6 @@ class DataReader(object):
             else:
                 image_stack_norm = image_stack_ds
                 logging.info("Imagenet norm not used")
-
-        # Wait until we get enough samples from Isaac
-        while True:
-            num = bridge.get_sample_number()
-            if num >= kSampleNumbers:
-                break
-            time.sleep(1.0)
-            logging.info("waiting for enough samples: {}".format(num))
 
         # Create iterators over datasets
         image_it = image_stack_ds.make_one_shot_iterator().get_next()

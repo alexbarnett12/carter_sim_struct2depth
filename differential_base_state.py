@@ -31,8 +31,18 @@ class DifferentialBaseState(Codelet):
         if angular_speed <= 1e-3:
             angular_speed = 0
 
+        try:
+            float(speed)
+        except ValueError:
+            speed = 0
+
+        try:
+            float(angular_speed)
+        except ValueError:
+            angular_speed = 0
+
         # Combine into a string format
-        combined_speed = "{}, {}".format(speed, angular_speed)
+        combined_speed = "{}".format(speed) + ", {}".format(angular_speed)
 
         # Write to a file. Overwritten for each new speed change
         f = open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv', 'w')

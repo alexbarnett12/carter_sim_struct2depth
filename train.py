@@ -23,6 +23,7 @@ import math
 import os
 import random
 import time
+import sys
 
 from absl import app
 from absl import flags
@@ -36,9 +37,12 @@ from struct2depth import reader
 from struct2depth import util
 
 # Isaac SDK imports
+ROOT_DIR = os.path.abspath("/mnt/isaac/")  # Root directory of the Isaac
+sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 from pinhole_to_tensor import PinholeToTensor
 from differential_base_state import DifferentialBaseState
+import packages.ml
 
 gfile = tf.gfile
 
@@ -64,7 +68,7 @@ flags.DEFINE_float('icp_weight', 0.0, 'ICP loss weight.')
 flags.DEFINE_float('size_constraint_weight', 0.0005, 'Weight of the object '
                                                      'size constraint loss. Use only when motion handling is '
                                                      'enabled.')
-flags.DEFINE_integer('batch_size', 5, 'The size of a sample batch')
+flags.DEFINE_integer('batch_size', 4, 'The size of a sample batch')
 flags.DEFINE_integer('img_height', 128, 'Input frame height.')
 flags.DEFINE_integer('img_width', 416, 'Input frame width.')
 flags.DEFINE_integer('seq_length', 3, 'Number of frames in sequence.')
@@ -90,16 +94,16 @@ flags.DEFINE_enum('flipping_mode', reader.FLIP_RANDOM,
                   'Determines the image flipping mode: if random, performs '
                   'on-the-fly augmentation. Otherwise, flips the input images '
                   'always or never, respectively.')
-flags.DEFINE_string('pretrained_ckpt', None, 'Path to checkpoint with '
+flags.DEFINE_string('pretrained_ckpt', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt', 'Path to checkpoint with '
                                              'pretrained weights.  Do not include .data* extension.')
 flags.DEFINE_string('imagenet_ckpt', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt', 'Initialize the weights according '
                                            'to an ImageNet-pretrained checkpoint. Requires '
                                            'architecture to be ResNet-18.')
-flags.DEFINE_string('checkpoint_dir', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts_25_new',
+flags.DEFINE_string('checkpoint_dir', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts/ckpts_40_delay_sim_2',
                     'Directory to save model '
                     'checkpoints.')
 flags.DEFINE_integer('train_steps', 10000000, 'Number of training steps.')
-flags.DEFINE_integer('summary_freq', 1, 'Save summaries every N steps.')
+flags.DEFINE_integer('summary_freq', 4, 'Save summaries every N steps.')
 flags.DEFINE_bool('depth_upsampling', True, 'Whether to apply depth '
                                             'upsampling of lower-scale representations before warping to '
                                             'compute reconstruction loss on full-resolution image.')
@@ -231,11 +235,11 @@ def main(_):
                               isaac_app=isaac_app)
 
     train(train_model, FLAGS.pretrained_ckpt, FLAGS.imagenet_ckpt,
-          FLAGS.checkpoint_dir, FLAGS.train_steps, FLAGS.summary_freq)
+          FLAGS.checkpoint_dir, FLAGS.train_steps, FLAGS.summary_freq, isaac_app)
 
-save_checkpoint = 1
+save_checkpoint = 20
 def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
-          train_steps, summary_freq):
+          train_steps, summary_freq, isaac_app):
     """Train model."""
 
     vars_to_restore = None
@@ -260,12 +264,29 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
             pretrain_restorer.restore(sess, ckpt_path)
 
         logging.info('Attempting to resume training from %s...', checkpoint_dir)
-        checkpoint = tf.train.latest_checkpoint('/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts_25_new/')
+        checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
         logging.info('Last checkpoint found: %s', checkpoint)
         if checkpoint:
             saver.restore(sess, checkpoint)
 
         logging.info('Training...')
+
+        # Start the application and Sight server
+        isaac_app.start_webserver()
+        isaac_app.start()
+        logging.info("Isaac application loaded")
+
+        node = isaac_app.find_node_by_name("CarterTrainingSamples")
+        bridge = packages.ml.SampleAccumulator(node)
+
+        # Wait until we get enough samples from Isaac
+        while True:
+            num = bridge.get_sample_number()
+            if num >= 1:
+                break
+            time.sleep(1.0)
+            logging.info("waiting for enough samples: {}".format(num))
+
         start_time = time.time()
         last_summary_time = time.time()
         steps_per_epoch = train_model.reader.steps_per_epoch
