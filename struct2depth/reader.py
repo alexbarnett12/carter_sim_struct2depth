@@ -78,7 +78,8 @@ class DataReader(object):
 
     def __init__(self, data_dir, batch_size, img_height, img_width, seq_length,
                  num_scales, file_extension, random_scale_crop, flipping_mode,
-                 random_color, imagenet_norm, shuffle, input_file='train', isaac_app=None):
+                 random_color, imagenet_norm, shuffle, input_file='train', isaac_app=None, optimize=False,
+                 repetitions=0):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.sample_numbers = kSampleNumbers
@@ -97,6 +98,8 @@ class DataReader(object):
         self.steps_per_epoch = 1000
         self.speed = 1000
         self.angular_speed = 1000
+        self.optimize = optimize
+        self.repetitions = repetitions
 
     # Retrieve current robot linear and angular speed from Isaac Sim
     def update_speed(self):
@@ -114,6 +117,7 @@ class DataReader(object):
                         self.angular_speed = float(row[1])
                     except ValueError:
                         self.angular_speed = 0
+
     # Check if Isaac Sim bridge has samples
     def has_samples(self, bridge):
         return bridge.get_sample_number() >= self.sample_numbers
@@ -164,19 +168,27 @@ class DataReader(object):
                                                                                    images[i - 1],
                                                                                    images[i]])
 
-                            # Add to total image lists
-                            image_batch = np.append(image_batch, np.expand_dims(image_seq, axis=0), axis=0)
-                            seg_mask_batch = np.append(seg_mask_batch, np.expand_dims(seg_mask_seq, axis=0), axis=0)
+                            if self.optimize:
+                                repetitions = self.repetitions
+                            else:
+                                repetitions = 1
+                            for j in range(repetitions):
+                                # Add to total image lists; add repetitions if performing online refinement
+                                image_batch = np.append(image_batch, np.expand_dims(image_seq, axis=0), axis=0)
+                                seg_mask_batch = np.append(seg_mask_batch, np.expand_dims(seg_mask_seq, axis=0), axis=0)
 
                     # TODO: Retrieve camera mat from Isaac instead of manually input
                     intrinsics = np.array([[208., 0., 208.], [0., 113.778, 64.], [0., 0., 1.]])  # Scaled properly
-                    intrinsics_batch = np.repeat(intrinsics[None, :], repeats=self.batch_size, axis=0)  # Create batch
+                    intrinsics_batch = np.repeat(intrinsics[None, :],
+                                                 repeats=self.batch_size if not self.optimize else self.repetitions,
+                                                 axis=0)  # Create batch
 
-                    # Shuffle batch elements to reduce overfitting
-                    np.random.seed(2)
-                    np.random.shuffle(image_batch)
-                    np.random.shuffle(seg_mask_batch)
-                    np.random.shuffle(intrinsics_batch)
+                    if not self.optimize:
+                        # Shuffle batch elements to reduce overfitting
+                        np.random.seed(2)
+                        np.random.shuffle(image_batch)
+                        np.random.shuffle(seg_mask_batch)
+                        np.random.shuffle(intrinsics_batch)
 
                     # Yield batches
                     yield {COLOR_IMAGE: np.array(image_batch),
@@ -194,6 +206,10 @@ class DataReader(object):
       Returns:
         A tf.data dataset which yields batches of training examples.
       """
+        if self.optimize:
+            dataset_size = self.repetitions
+        else:
+            dataset_size = self.batch_size
 
         dataset = tf.data.Dataset.from_generator(
             self.get_generator(bridge, img_processor), {
@@ -201,9 +217,9 @@ class DataReader(object):
                 SEG_MASK: tf.uint8,
                 INTRINSICS: tf.float32,
             }, {
-                COLOR_IMAGE: (self.batch_size, HEIGHT, TRIPLET_WIDTH, 3),
-                SEG_MASK: (self.batch_size, HEIGHT, TRIPLET_WIDTH, 3),
-                INTRINSICS: (self.batch_size, 3, 3),
+                COLOR_IMAGE: (dataset_size, HEIGHT, TRIPLET_WIDTH, 3),
+                SEG_MASK: (dataset_size, HEIGHT, TRIPLET_WIDTH, 3),
+                INTRINSICS: (dataset_size, 3, 3),
             })
 
         return dataset
@@ -321,7 +337,8 @@ class DataReader(object):
                 for i in range(self.seq_length)
             ]
             image_stack = tf.concat(image_list, axis=3)
-            image_stack.set_shape([self.batch_size, self.img_height, self.img_width, self.seq_length * 3])
+            image_stack.set_shape([self.batch_size if not self.optimize else self.repetitions,
+                                   self.img_height, self.img_width, self.seq_length * 3])
         return image_stack
 
     # Randomly augment the brightness contrast, saturation, and hue of the image.
@@ -369,7 +386,7 @@ class DataReader(object):
         intrinsics_ds_multi_scale = []
         intrinsics_multi_scale = []
         # Scale the intrinsics accordingly for each scale
-        for x in range(self.batch_size):
+        for x in range(self.batch_size if not self.optimize else self.repetitions):
             intrinsics_multi_scale = []
             for s in range(self.num_scales):
                 fx = intrinsics[x, 0, 0] / (2 ** s)
