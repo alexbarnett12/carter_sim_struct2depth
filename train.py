@@ -49,17 +49,25 @@ gfile = tf.gfile
 # M
 MAX_TO_KEEP = 1000000  # Maximum number of checkpoints to keep.
 
+# Map strings
+WAREHOUSE = 'carter_warehouse_p'
+HOSPITAL = 'hospital'
+
 # Isaac Sim flags
 flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter.graph.json",
                     'Where the isaac SDK app graph is stored')
 flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter.config.json",
                     'Where the isaac SDK app node configuration is stored')
+flags.DEFINE_string('map_config_filename', "apps/assets/maps/" + HOSPITAL + ".config.json",
+                    "Config file for Isaac Sim map")
+flags.DEFINE_string('map_graph_filename', "apps/assets/maps/" + HOSPITAL + ".graph.json",
+                    "Graph file for Isaac Sim map")
 
 # Tensorflow flags
 flags.DEFINE_string('data_dir', '/mnt',
                     'Preprocessed data.')
 flags.DEFINE_string('file_extension', 'png', 'Image data file extension.')
-flags.DEFINE_float('learning_rate', 0.0002, 'Adam learning rate.')
+flags.DEFINE_float('learning_rate', 0.00002, 'Adam learning rate.')
 flags.DEFINE_float('beta1', 0.9, 'Adam momentum.')
 flags.DEFINE_float('reconstr_weight', 0.85, 'Frame reconstruction loss weight.')
 flags.DEFINE_float('ssim_weight', 0.15, 'SSIM loss weight.')
@@ -94,12 +102,17 @@ flags.DEFINE_enum('flipping_mode', reader.FLIP_RANDOM,
                   'Determines the image flipping mode: if random, performs '
                   'on-the-fly augmentation. Otherwise, flips the input images '
                   'always or never, respectively.')
-flags.DEFINE_string('pretrained_ckpt', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt', 'Path to checkpoint with '
-                                             'pretrained weights.  Do not include .data* extension.')
-flags.DEFINE_string('imagenet_ckpt', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt', 'Initialize the weights according '
-                                           'to an ImageNet-pretrained checkpoint. Requires '
-                                           'architecture to be ResNet-18.')
-flags.DEFINE_string('checkpoint_dir', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts/ckpts_40_delay_sim_2',
+flags.DEFINE_string('pretrained_ckpt',
+                    '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt',
+                    'Path to checkpoint with '
+                    'pretrained weights.  Do not include .data* extension.')
+flags.DEFINE_string('imagenet_ckpt',
+                    '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt',
+                    'Initialize the weights according '
+                    'to an ImageNet-pretrained checkpoint. Requires '
+                    'architecture to be ResNet-18.')
+flags.DEFINE_string('checkpoint_dir',
+                    '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts/ckpts_40_delay_hospital',
                     'Directory to save model '
                     'checkpoints.')
 flags.DEFINE_integer('train_steps', 10000000, 'Number of training steps.')
@@ -131,12 +144,12 @@ flags.DEFINE_string('master', 'local', 'Location of the session.')
 
 FLAGS = flags.FLAGS
 
-
 # flags.mark_flag_as_required('data_dir')
 # flags.mark_flag_as_required('checkpoint_dir')
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0" # GPU to run
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # GPU to run
+
 
 def main(_):
     # Fixed seed for repeatability
@@ -183,22 +196,22 @@ def main(_):
 
     # Create Isaac application.
     isaac_app = Application(name="carter_sim", modules=["map",
-                                                  "navigation",
-                                                  "perception",
-                                                  "planner",
-                                                  "viewers",
-                                                  "flatsim",
-                                                  "//packages/ml:ml"])
+                                                        "navigation",
+                                                        "perception",
+                                                        "planner",
+                                                        "viewers",
+                                                        "flatsim",
+                                                        "//packages/ml:ml"])
 
     # Load config files
     isaac_app.load_config(FLAGS.config_filename)
     isaac_app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
-    isaac_app.load_config("apps/assets/maps/carter_warehouse_p.config.json")
+    isaac_app.load_config(FLAGS.map_config_filename)
 
     # Load graph files
     isaac_app.load_graph(FLAGS.graph_filename)
     isaac_app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
-    isaac_app.load_graph("apps/assets/maps/carter_warehouse_p.graph.json")
+    isaac_app.load_graph(FLAGS.map_graph_filename)
     isaac_app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
 
     # Register custom Isaac codelets

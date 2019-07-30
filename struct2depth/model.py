@@ -83,6 +83,7 @@ class Model(object):
                size_constraint_weight=0.0,
                train_global_scale_var=True,
                isaac_app=None,
+               optimize=False,
                num_steps=0):
     self.data_dir = data_dir
     self.file_extension = file_extension
@@ -117,6 +118,7 @@ class Model(object):
     self.size_constraint_weight = size_constraint_weight
     self.train_global_scale_var = train_global_scale_var
     self.isaac_app = isaac_app
+    self.optimize = optimize
     self.repetitions = num_steps
 
     logging.info('data_dir: %s', data_dir)
@@ -171,8 +173,8 @@ class Model(object):
                                       self.shuffle,
                                       self.input_file,
                                       self.isaac_app,
-                                      optimize=True,
-                                      repetitions=self.repetitions)
+                                      self.optimize,
+                                      self.repetitions)
       self.build_train_graph()
     else:
       self.build_depth_test_graph()

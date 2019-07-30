@@ -141,7 +141,7 @@ flags.DEFINE_bool('joint_encoder', False, 'Whether to share parameters '
 flags.DEFINE_float('egomotion_threshold', 0.01, 'Minimum egomotion magnitude '
                                                 'to apply finetuning. If lower, just forwards the ordinary '
                                                 'prediction.')
-flags.DEFINE_integer('num_steps', 20, 'Number of optimization steps to run.')
+flags.DEFINE_integer('num_steps', 5, 'Number of optimization steps to run.')
 flags.DEFINE_boolean('handle_motion', True, 'Whether the checkpoint was '
                                             'trained with motion handling.')
 flags.DEFINE_bool('flip', False, 'Whether images should be flipped as well as '
@@ -216,6 +216,11 @@ def main(_):
     isaac_app.load_graph(FLAGS.map_graph_filename)
     isaac_app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
 
+    # Start the application and Sight server
+    isaac_app.start_webserver()
+    isaac_app.start()
+    logging.info("Isaac application loaded")
+
     # Run fine-tuning process and save predictions in id-folders.
     tf.set_random_seed(FIXED_SEED)
     np.random.seed(FIXED_SEED)
@@ -253,6 +258,7 @@ def main(_):
                               size_constraint_weight=FLAGS.size_constraint_weight,
                               train_global_scale_var=False,
                               isaac_app=isaac_app,
+                              optimize=True,
                               num_steps=FLAGS.num_steps)
 
     finetune_inference(train_model, FLAGS.model_ckpt,
@@ -274,11 +280,6 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app):
     failed_heuristic = []
     with sv.managed_session(config=config) as sess:
         # TODO: Caching the weights would be better to avoid I/O bottleneck.
-
-        # Start the application and Sight server
-        isaac_app.start_webserver()
-        isaac_app.start()
-        logging.info("Isaac application loaded")
 
         node = isaac_app.find_node_by_name("CarterTrainingSamples")
         bridge = packages.ml.SampleAccumulator(node)
