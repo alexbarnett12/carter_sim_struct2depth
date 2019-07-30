@@ -84,7 +84,7 @@ py_binary(
 )
 
 py_binary(
-    name = "optimize_sim,
+    name = "optimize_sim",
     srcs = [
         "differential_base_state.py",
         "pinhole_to_tensor.py",
