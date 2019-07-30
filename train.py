@@ -52,7 +52,7 @@ MAX_TO_KEEP = 1000000  # Maximum number of checkpoints to keep.
 # Isaac Sim flags
 flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter.graph.json",
                     'Where the isaac SDK app graph is stored')
-flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter.config.json",
+flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter_server.config.json",
                     'Where the isaac SDK app node configuration is stored')
 
 # Tensorflow flags
