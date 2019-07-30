@@ -41,36 +41,49 @@ sample_num = 1
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter_save.graph.json",
+
+# Map strings
+WAREHOUSE = 'carter_warehouse_p'
+HOSPITAL = 'hospital'
+
+# Isaac Sim flags
+flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter.graph.json",
                     'Where the isaac SDK app graph is stored')
-flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter_save.config.json",
+flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter.config.json",
                     'Where the isaac SDK app node configuration is stored')
+flags.DEFINE_string('map_config_filename', "apps/assets/maps/" + HOSPITAL + ".config.json",
+                    "Config file for Isaac Sim map")
+flags.DEFINE_string('map_graph_filename', "apps/assets/maps/" + HOSPITAL + ".graph.json",
+                    "Graph file for Isaac Sim map")
 
-# Create the application.
-app = Application(name="carter_sim", modules=["map",
-                                              "navigation",
-                                              "perception",
-                                              "planner",
-                                              "viewers",
-                                              "flatsim",
-                                              "//packages/ml:ml"])
+# Create Isaac application.
+isaac_app = Application(name="carter_sim", modules=["map",
+                                                    "navigation",
+                                                    "perception",
+                                                    "planner",
+                                                    "viewers",
+                                                    "flatsim",
+                                                    "//packages/ml:ml"])
 
-app.load_config(FLAGS.config_filename)
-app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
-app.load_config("apps/assets/maps/carter_warehouse_p.config.json")
-app.load_graph(FLAGS.graph_filename)
-app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
-app.load_graph("apps/assets/maps/carter_warehouse_p.graph.json")
-app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
+# Load config files
+isaac_app.load_config(FLAGS.config_filename)
+isaac_app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
+isaac_app.load_config(FLAGS.map_config_filename)
 
-# Register custom PyCodelet
-app.register({"differential_base_state": DifferentialBaseState})
+# Load graph files
+isaac_app.load_graph(FLAGS.graph_filename)
+isaac_app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
+isaac_app.load_graph(FLAGS.map_graph_filename)
+isaac_app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
+
+# Register custom Isaac codelets
+isaac_app.register({"differential_base_state": DifferentialBaseState})
 
 # Startup the bridge to get data.
-node = app.find_node_by_name("CarterTrainingSamples")
+node = isaac_app.find_node_by_name("CarterTrainingSamples")
 bridge = packages.ml.SampleAccumulator(node)
-app.start_webserver()
-app.start()
+isaac_app.start_webserver()
+isaac_app.start()
 
 img_processor = ImageProcessor()
 
@@ -111,7 +124,7 @@ while True:
                                                                          images[i + 2][0]]))
 
             # Save to directory
-            cv2.imwrite('/data/repositories/isaac/apps/carter_sim_struct2depth/sim_images/sim_images_40_delay/{}.png'.format(count),
+            cv2.imwrite('/data/repositories/isaac/apps/carter_sim_struct2depth/sim_images/sim_images_40_delay_hospital/{}.png'.format(count),
                         np.uint8(big_img))
             cv2.imwrite('/data/repositories/isaac/apps/carter_sim_struct2depth/sim_seg_masks/{}-fseg.png'.format(count), big_seg_img)
             f = open('/data/repositories/isaac/apps/carter_sim_struct2depth/sim_intrinsics/{}.csv'.format(count), 'w')
