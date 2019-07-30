@@ -115,19 +115,6 @@
       }
     }
   },
-    "LeftColorCameraEncoder": {
-        "isaac.ml.ColorCameraEncoder": {
-            "rows": 256,
-            "cols": 512,
-            "pixel_normalization_mode": "PositiveNegative"
-        }
-  },
-    "CarterTrainingSamples": {
-        "isaac.ml.SampleAccumulator": {
-            "sample_buffer_size": 500
-        }
-    },
-
   "CarterRightCamera": {
     "CameraComponent": {
       "parent_actor": "carter_1",
@@ -148,32 +135,32 @@
   },
   "LidarPublisher": {
     "isaac.alice.TcpPublisher": {
-      "port": 5000,
-      "host": "localhost"
+      "port": 5010,
+      "host": "10.0.1.143"
     }
   },
   "ActorPublisher": {
     "isaac.alice.TcpPublisher": {
-      "port": 5001,
-      "host": "localhost"
+      "port": 5011,
+      "host": "10.0.1.143"
     }
   },
   "ActuatorSubscriber": {
     "isaac.alice.TcpSubscriber": {
-      "port": 5002,
-      "host": "localhost"
+      "port": 5012,
+      "host": "10.0.1.143"
     }
   },
   "LeftCameraPublisher": {
     "isaac.alice.TcpPublisher": {
-      "port": 5003,
-      "host": "localhost"
+      "port": 5013,
+      "host": "10.0.1.143"
     }
   },
   "RightCameraPublisher": {
     "isaac.alice.TcpPublisher": {
-      "port": 5004,
-      "host": "localhost"
+      "port": 5014,
+      "host": "10.0.1.143"
     }
   }
 }
