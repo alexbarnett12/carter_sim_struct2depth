@@ -85,15 +85,6 @@ def display_images(image_ds):
         plt.yticks([])
         plt.show()
 
-# Helper function for splitting datasets into sub-datasets.
-def split_datasets(dataset):
-    subsets = {}
-    names = list(dataset.output_shapes.keys())
-    for name in names:
-        subsets[name] = dataset.map(lambda x: x[name])
-
-    return subsets
-
 class DataReader(object):
     """Reads stored sequences which are produced by dataset/gen_data.py."""
 
@@ -116,106 +107,14 @@ class DataReader(object):
         self.isaac_app = isaac_app
         self.steps_per_epoch = 4
 
-    def get_generator(self, bridge, img_processor):
-        """Create a training sample generator.
-
-        Args:
-          bridge: the isaac sample accumulator node which we will acquire samples from
-
-        Returns:
-          A generator function which yields a single training example.
-      """
-
-        def _generator():
-            # Indefinitely yield samples.
-            while True:
-
-                # Wait until we get enough samples from Isaac
-                while True:
-                    num = bridge.get_sample_number()
-                    if num >= kSampleNumbers:
-                        break
-                    time.sleep(1.0)
-                    # logging.info("waiting for enough samples: {}".format(num))
-
-                # Try to acquire a sample.
-                # If none are available, then wait for a bit so we do not spam the app.
-                # Samples are received as (128 x 416 x 3) float32 images in the range of 0-255.
-                # They will be pre-processed to be in the range 0-1 for training.
-                sample = bridge.acquire_samples(kSampleNumbers)
-                if not sample:
-                    time.sleep(1)
-                    continue
-
-                # print(np.shape(sample))
-
-                # Create wide image and segmentation triplets
-                # TODO: Turn seg mask generator into an Isaac node
-                # TODO: Fix MRCNN to work within another tf.Graph()
-                image_seq, seg_mask_seq = img_processor.process_image(np.array([sample[0][0],
-                                                                                sample[1][0],
-                                                                                sample[2][0]]))
-
-                # TODO: Retrieve camera mat from Isaac
-                # intrinsics = np.array([[480, 0, 270], [0, 480, 480], [0, 0, 1]], dtype=np.float32)
-
-                yield {COLOR_IMAGE: image_seq,
-                       SEG_MASK: seg_mask_seq,
-                       INTRINSICS: intrinsics}
-
-        return _generator
-
-    def get_dataset(self, bridge, batch_size, img_processor):
-        """Create a tf.data dataset which yields batches of samples for training.
-
-      Args:
-          bridge: the isaac sample accumulator node which we will acquire samples from
-
-      Returns:
-        A tf.data dataset which yields batches of training examples.
-      """
-
-        dataset = tf.data.Dataset.from_generator(
-            self.get_generator(bridge, img_processor), {
-                COLOR_IMAGE: tf.float32,
-                SEG_MASK: tf.uint8,
-                INTRINSICS: tf.float32,
-            }, {
-                COLOR_IMAGE: (HEIGHT, TRIPLET_WIDTH, 3),
-                SEG_MASK: (HEIGHT, TRIPLET_WIDTH, 3),
-                INTRINSICS: (3, 3),
-            })
-
-        return dataset
 
     def read_data(self):
         """Provides images and camera intrinsics."""
         with tf.name_scope('data_loading'):
 
-            # # Startup the sample accumulator bridge to get Isaac Sim data
-            # node = self.isaac_app.find_node_by_name("CarterTrainingSamples")
-            # bridge = packages.ml.SampleAccumulator(node)
-            #
-            # # Start the application and Sight server
-            # self.isaac_app.start_webserver()
-            # self.isaac_app.start()
-            # logging.info("Isaac application loaded")
-            #
-            # # Create image processor for generating triplets and seg masks
-            # img_processor = ImageProcessor()
-            # logging.info("Image Processor created")
-            #
-            # # Create a Dataset and iterator from Isaac generator
-            # isaac_dataset = self.get_dataset(bridge, self.batch_size, img_processor)
-            #
-            # # Split dataset into image, seg mask, and intrinsics datasets
-            # isaac_subsets = split_datasets(isaac_dataset)
-            # image_ds = isaac_subsets[COLOR_IMAGE]
-            # seg_ds = isaac_subsets[SEG_MASK]
-            # intrinsics_ds = isaac_subsets[INTRINSICS]
-            data_root = '/mnt/isaac/apps/carter_sim_struct2depth/synth_images_25_delay'
-            data_root_seg = '/mnt/isaac/apps/carter_sim_struct2depth/synth_images_seg'
-            data_root_intrinsics = '/mnt/isaac/apps/carter_sim_struct2depth/synth_images_intrinsics'
+            data_root = '/mnt/isaac/apps/carter_sim_struct2depth/sim_images/sim_images_25_delay'
+            data_root_seg = '/mnt/isaac/apps/carter_sim_struct2depth/sim_seg_masks'
+            data_root_intrinsics = '/mnt/isaac/apps/carter_sim_struct2depth/sim_intrinsics'
             all_image_paths = list(glob.glob(data_root + '/*'))
             all_image_paths_seg = list(glob.glob(data_root_seg + '/*'))
             all_image_paths_intrinsics = list(glob.glob(data_root_intrinsics + '/*'))
@@ -227,6 +126,7 @@ class DataReader(object):
             # Seg masks
             path_ds_seg = tf.data.Dataset.from_tensor_slices(all_image_paths_seg)
             seg_ds = path_ds_seg.map(load_and_preprocess_image, num_parallel_calls=AUTOTUNE)
+            seg_ds = seg_ds.map(lambda x: tf.cast(x, dtype=tf.uint8), num_parallel_calls=AUTOTUNE) # Must be uint8
 
             # Camera intrinsics
             record_defaults = [tf.float32] * 9
@@ -235,30 +135,15 @@ class DataReader(object):
             intrinsics_ds = intrinsics_ds.map(lambda x: tf.reshape(x, [3, 3]))
             logging.info("Datasets loaded")
 
-            # data_dict = dataset.make_one_shot_iterator().get_next()
-            # logging.info("Dataset from generator created")
-            # print("Dataset: {}".format(dataset))
-            #
-            # # Extract image, seg mask, and camera matrix
-            # image_seq = data_dict[COLOR_IMAGE]
-            # # image_stack_norm = data_dict[IMAGE_NORM]
-            # seg_mask_seq = data_dict[SEG_MASK]
-            # intrinsics = data_dict[INTRINSICS]
-            # # intrinsics_inv = data_dict[INTRINSICS_INV]
-            # logging.info("Dictionary elements extracted")
-
             # print("Dataset: {}".format(isaac_dataset))
             print("Image dataset: {}".format(image_ds))
             print("Seg mask dataset: {}".format(seg_ds))
             print("Intrinsics dataset: {}".format(intrinsics_ds))
 
-        # TODO: Replace with tf.Dataset pre-processing pipeline
         with tf.name_scope('preprocessing'):
 
             # Scale image values from 0-255 to 0-1
             image_ds = image_ds.map(lambda x: x / 255.0, num_parallel_calls=AUTOTUNE)
-
-
 
             # Randomly augment colorspace
             if self.random_color:
@@ -313,15 +198,7 @@ class DataReader(object):
                 image_stack_norm = image_stack_ds
                 logging.info("Imagenet norm not used")
 
-        # # Wait until we get enough samples from Isaac
-        #     while True:
-        #         num = bridge.get_sample_number()
-        #         if num >= kSampleNumbers:
-        #             break
-        #         time.sleep(1.0)
-        #         logging.info("waiting for enough samples: {}".format(num))
-
-                # Shuffle and batch datasets
+        # Shuffle and batch datasets
         with tf.name_scope('batching'):
             if self.shuffle:
                 image_stack_ds = image_stack_ds.shuffle(buffer_size=20, seed=2).batch(self.batch_size, drop_remainder=True).repeat(REPEAT)
@@ -330,35 +207,12 @@ class DataReader(object):
                 intrinsics_ds = intrinsics_ds.shuffle(buffer_size=20, seed=2).batch(self.batch_size, drop_remainder=True).repeat(REPEAT)
                 intrinsics_inv = intrinsics_inv.shuffle(buffer_size=20, seed=2).batch(self.batch_size, drop_remainder=True).repeat(REPEAT)
 
-                # (image_stack_ds, image_stack_norm, seg_stack, intrinsics,
-                #  intrinsics_inv) = tf.train.shuffle_batch(
-                #     [image_stack_ds, image_stack_norm, seg_stack_ds, intrinsics_ds,
-                #      intrinsics_inv],
-                #     batch_size=self.batch_size,
-                #     capacity=QUEUE_SIZE + QUEUE_BUFFER * self.batch_size,
-                #     min_after_dequeue=QUEUE_SIZE)
             else:
                 image_stack_ds = image_stack_ds.batch(self.batch_size)
                 image_stack_norm = image_stack_norm.batch(self.batch_size)
                 seg_stack_ds = seg_stack_ds.batch(self.batch_size)
                 intrinsics_ds = intrinsics_ds.batch(self.batch_size)
                 intrinsics_inv = intrinsics_inv.batch(self.batch_size)
-                # (image_stack_ds, image_stack_norm, seg_stack, intrinsics,
-                #  intrinsics_inv) = tf.train.batch(
-                #     [image_stack_ds, image_stack_norm, seg_stack_ds, intrinsics_ds,
-                #      intrinsics_inv],
-                #     batch_size=self.batch_size,
-                #     capacity=QUEUE_SIZE + QUEUE_BUFFER * self.batch_size,
-                #     min_after_dequeue=QUEUE_SIZE)
-
-            # # Extract image, seg mask, and camera matrix
-            # image_seq = data_dict[COLOR_IMAGE]
-            # # image_stack_norm = data_dict[IMAGE_NORM]
-            # seg_mask_seq = data_dict[SEG_MASK]
-            # intrinsics = data_dict[INTRINSICS]
-            # # intrinsics_inv = data_dict[INTRINSICS_INV]
-            # logging.info("Dictionary elements extracted")
-
 
         # Create iterators over datasets
         image_it = image_stack_ds.make_one_shot_iterator().get_next()
@@ -366,131 +220,20 @@ class DataReader(object):
         seg_it = seg_stack_ds.make_one_shot_iterator().get_next()
         intrinsics_it = intrinsics_ds.make_one_shot_iterator().get_next()
         intrinsics_inv_it = intrinsics_inv.make_one_shot_iterator().get_next()
+
+        logging.info("Dataset successfuly processed")
+        logging.info("Final dimensional check")
         print(image_it)
         print(image_norm_it)
         print(seg_it)
         print(intrinsics_it)
         print(intrinsics_inv_it)
 
-        # # Shuffle and batch datasets
-        # with tf.name_scope('batching'):
-        #     if self.shuffle:
-        #         (image_stack_ds, image_stack_norm, seg_stack, intrinsics,
-        #          intrinsics_inv) = tf.train.shuffle_batch(
-        #             [image_stack_ds, image_stack_norm, seg_stack_ds, intrinsics_ds,
-        #              intrinsics_inv],
-        #             batch_size=self.batch_size,
-        #             capacity=QUEUE_SIZE + QUEUE_BUFFER * self.batch_size,
-        #             min_after_dequeue=QUEUE_SIZE)
-        #     else:
-        #         (image_stack_ds, image_stack_norm, seg_stack, intrinsics,
-        #          intrinsics_inv) = tf.train.batch(
-        #             [image_stack_ds, image_stack_norm, seg_stack_ds, intrinsics_ds,
-        #              intrinsics_inv],
-        #             batch_size=self.batch_size,
-        #             capacity=QUEUE_SIZE + QUEUE_BUFFER * self.batch_size,
-        #             min_after_dequeue=QUEUE_SIZE)
-
-
-        #     # Scale image values from 0-255 to 0-1
-        #     image_seq = image_seq / 255.0
-        #
-        #     # Randomly augment colorspace
-        #     if self.random_color:
-        #         with tf.name_scope('image_augmentation'):
-        #             image_seq = self.augment_image_colorspace(image_seq)
-        #         logging.info("Image successfully augmented")
-        #     print("Image dataset: {}".format(image_seq))
-        #     print("Seg mask dataset: {}".format(seg_mask_seq))
-        #     print("Intrinsics dataset: {}".format(intrinsics))
-        #
-        #     # Unpack wide images into three stacked images
-        #     image_stack = self.unpack_images(image_seq)
-        #     seg_stack = self.unpack_images(seg_mask_seq)
-        #     logging.info("Images unpacked")
-        #     print("Image dataset: {}".format(image_stack))
-        #     print("Seg mask dataset: {}".format(seg_stack))
-        #     print("Intrinsics dataset: {}".format(intrinsics))
-        #
-        #     # Randomly flip images
-        #     if self.flipping_mode != FLIP_NONE:
-        #         random_flipping = (self.flipping_mode == FLIP_RANDOM)
-        #         with tf.name_scope('image_augmentation_flip'):
-        #             image_stack, seg_stack, intrinsics = self.augment_images_flip(
-        #                 image_stack, seg_stack, intrinsics,
-        #                 randomized=random_flipping)
-        #             logging.info("Images flipped")
-        #
-        #     # Randomly scale and crop images
-        #     if self.random_scale_crop:
-        #         with tf.name_scope('image_augmentation_scale_crop'):
-        #             image_stack, seg_stack, intrinsics = self.augment_images_scale_crop(
-        #                 image_stack, seg_stack, intrinsics, self.img_height,
-        #                 self.img_width)
-        #         logging.info("Images scaled and cropped")
-        #
-        #     # Adjust camera intrinsics to the correct scale and compute the inverse
-        #     with tf.name_scope('multi_scale_intrinsics'):
-        #         intrinsics = self.get_multi_scale_intrinsics(intrinsics,
-        #                                                      self.num_scales)
-        #         intrinsics.set_shape([self.num_scales, 3, 3])
-        #         intrinsics_inv = tf.matrix_inverse(intrinsics)
-        #         intrinsics_inv.set_shape([self.num_scales, 3, 3])
-        #         logging.info("Multi scale intrinsics received")
-        #
-        #     # Subtract Imagenet norm
-        #     if self.imagenet_norm:
-        #         im_mean = tf.tile(
-        #             tf.constant(IMAGENET_MEAN), multiples=[self.seq_length])
-        #         im_sd = tf.tile(
-        #             tf.constant(IMAGENET_SD), multiples=[self.seq_length])
-        #         image_stack_norm = (image_stack - im_mean) / im_sd
-        #         logging.info("Imagenet norm used")
-        #     else:
-        #         image_stack_norm = image_stack
-        #         logging.info("Imagenet norm not used")
-        #
-        #     # Wait until we get enough samples from Isaac
-        #     while True:
-        #         num = bridge.get_sample_number()
-        #         if num >= kSampleNumbers:
-        #             break
-        #         time.sleep(1.0)
-        #         logging.info("waiting for enough samples: {}".format(num))
-        #
-        # with tf.name_scope('batching'):
-        #     if self.shuffle:
-        #         (image_stack, image_stack_norm, seg_stack, intrinsics,
-        #          intrinsics_inv) = tf.train.shuffle_batch(
-        #             [image_stack, image_stack_norm, seg_stack, intrinsics,
-        #              intrinsics_inv],
-        #             batch_size=self.batch_size,
-        #             capacity=QUEUE_SIZE + QUEUE_BUFFER * self.batch_size,
-        #             min_after_dequeue=QUEUE_SIZE)
-        #     else:
-        #         (image_stack, image_stack_norm, seg_stack, intrinsics,
-        #          intrinsics_inv) = tf.train.batch(
-        #             [image_stack, image_stack_norm, seg_stack, intrinsics,
-        #              intrinsics_inv],
-        #             batch_size=self.batch_size,
-        #             capacity=QUEUE_SIZE + QUEUE_BUFFER * self.batch_size,
-        #             min_after_dequeue=QUEUE_SIZE)
-        logging.info("Dataset successfuly processed")
-        logging.info("Final dimensional check")
-        # print(dataset)
-        # print("Image dataset: {}".format(image_stack))
-        # print("Image norm: {}".format(image_stack_norm))
-        # print("Seg mask dataset: {}".format(seg_stack))
-        # print("Intrinsics dataset: {}".format(intrinsics))
-        # print("Intrinsics inverse dataset: {}".format(intrinsics_inv))
         return (image_it,
                 image_norm_it,
                 seg_it,
                 intrinsics_it,
                 intrinsics_inv_it)
-        # return (image_stack, image_stack_norm, seg_stack, intrinsics,
-        #         intrinsics_inv)
-
 
     # Unpack image triplet from [h, w * seq_length, 3] -> [h, w, 3 * seq_length] image stack.
     def unpack_images(self, image_seq):
@@ -703,187 +446,3 @@ def make_intrinsics_matrix(fx, fy, cx, cy):
     r3 = tf.constant([0., 0., 1.])
     intrinsics = tf.stack([r1, r2, r3])
     return intrinsics
-
-
-    # # Make image dataset from saved directory
-    # data_root = '/mnt/isaac/apps/carter_sim_struct2depth/synth_images'
-    # data_root_seg = '/mnt/isaac/apps/carter_sim_struct2depth/synth_images'
-    # data_root_intrinsics = '/mnt/isaac/apps/carter_sim_struct2depth/synth_images_intrinsics'
-    # all_image_paths = list(glob.glob(data_root + '/*'))
-    # all_image_paths_seg = list(glob.glob(data_root_seg + '/*'))
-    # all_image_paths_intrinsics = list(glob.glob(data_root_intrinsics + '/*'))
-    #
-    # # Raw image triplets
-    # path_ds = tf.data.Dataset.from_tensor_slices(all_image_paths)
-    # image_ds = path_ds.map(load_and_preprocess_image, num_parallel_calls=AUTOTUNE)
-    #
-    # # Seg masks
-    # path_ds_seg = tf.data.Dataset.from_tensor_slices(all_image_paths_seg)
-    # seg_ds = path_ds_seg.map(load_and_preprocess_image, num_parallel_calls=AUTOTUNE)
-    #
-    # # Camera intrinsics
-    # record_defaults = [tf.float32] * 9
-    # intrinsics_ds = tf.data.experimental.CsvDataset(all_image_paths_intrinsics, record_defaults)  # Dataset of .csv lines
-    # intrinsics_ds = intrinsics_ds.map(lambda *x: tf.convert_to_tensor(x))  # Convert to tensors
-    # logging.info("Datasets loaded")
-
-    # with tf.name_scope('preprocessing'):
-
-
-
-
-
-    #
-    # def unpack_images(self, image_seq):
-    #     """[h, w * seq_length, 3] -> [h, w, 3 * seq_length]."""
-    #     with tf.name_scope('unpack_images'):
-    #         image_list = [
-    #             image_seq[:, i * self.img_width:(i + 1) * self.img_width, :]
-    #             for i in range(self.seq_length)
-    #         ]
-    #         image_stack = tf.concat(image_list, axis=2)
-    #         image_stack.set_shape(
-    #             [self.img_height, self.img_width, self.seq_length * 3])
-    #     return image_stack
-    #
-    # @classmethod
-    # def preprocess_image(cls, image):
-    #     # Convert from uint8 to float.
-    #     return tf.image.convert_image_dtype(image, dtype=tf.float32)
-    #
-    # @classmethod
-    # def augment_image_colorspace(cls, image_stack):
-    #     """Apply data augmentation to inputs."""
-    #     image_stack_aug = image_stack
-    #     # Randomly shift brightness.
-    #     apply_brightness = tf.less(tf.random_uniform(
-    #         shape=[], minval=0.0, maxval=1.0, dtype=tf.float32), 0.5)
-    #     image_stack_aug = tf.cond(
-    #         apply_brightness,
-    #         lambda: tf.image.random_brightness(image_stack_aug, max_delta=0.1),
-    #         lambda: image_stack_aug)
-    #
-    #     # Randomly shift contrast.
-    #     apply_contrast = tf.less(tf.random_uniform(
-    #         shape=[], minval=0.0, maxval=1.0, dtype=tf.float32), 0.5)
-    #     image_stack_aug = tf.cond(
-    #         apply_contrast,
-    #         lambda: tf.image.random_contrast(image_stack_aug, 0.85, 1.15),
-    #         lambda: image_stack_aug)
-    #
-    #     # Randomly change saturation.
-    #     apply_saturation = tf.less(tf.random_uniform(
-    #         shape=[], minval=0.0, maxval=1.0, dtype=tf.float32), 0.5)
-    #     image_stack_aug = tf.cond(
-    #         apply_saturation,
-    #         lambda: tf.image.random_saturation(image_stack_aug, 0.85, 1.15),
-    #         lambda: image_stack_aug)
-    #
-    #     # Randomly change hue.
-    #     apply_hue = tf.less(tf.random_uniform(
-    #         shape=[], minval=0.0, maxval=1.0, dtype=tf.float32), 0.5)
-    #     image_stack_aug = tf.cond(
-    #         apply_hue,
-    #         lambda: tf.image.random_hue(image_stack_aug, max_delta=0.1),
-    #         lambda: image_stack_aug)
-    #
-    #     image_stack_aug = tf.clip_by_value(image_stack_aug, 0, 1)
-    #     return image_stack_aug
-    #
-    # @classmethod
-    # def augment_images_flip(cls, image_stack, seg_stack, intrinsics,
-    #                         randomized=True):
-    #     """Randomly flips the image horizontally."""
-    #
-    #     def flip(cls, image_stack, seg_stack, intrinsics):
-    #         _, in_w, _ = image_stack.get_shape().as_list()
-    #         fx = intrinsics[0, 0]
-    #         fy = intrinsics[1, 1]
-    #         cx = in_w - intrinsics[0, 2]
-    #         cy = intrinsics[1, 2]
-    #         intrinsics = cls.make_intrinsics_matrix(fx, fy, cx, cy)
-    #         return (tf.image.flip_left_right(image_stack),
-    #                 tf.image.flip_left_right(seg_stack), intrinsics)
-    #
-    #     if randomized:
-    #         prob = tf.random_uniform(shape=[], minval=0.0, maxval=1.0,
-    #                                  dtype=tf.float32)
-    #         predicate = tf.less(prob, 0.5)
-    #         return tf.cond(predicate,
-    #                        lambda: flip(cls, image_stack, seg_stack, intrinsics),
-    #                        lambda: (image_stack, seg_stack, intrinsics))
-    #     else:
-    #         return flip(cls, image_stack, seg_stack, intrinsics)
-    #
-    # @classmethod
-    # def augment_images_scale_crop(cls, im, seg, intrinsics, out_h, out_w):
-    #     """Randomly scales and crops image."""
-    #
-    #     def scale_randomly(im, seg, intrinsics):
-    #         """Scales image and adjust intrinsics accordingly."""
-    #         in_h, in_w, _ = im.get_shape().as_list()
-    #         scaling = tf.random_uniform([2], 1, 1.15)
-    #         x_scaling = scaling[0]
-    #         y_scaling = scaling[1]
-    #         out_h = tf.cast(in_h * y_scaling, dtype=tf.int32)
-    #         out_w = tf.cast(in_w * x_scaling, dtype=tf.int32)
-    #         # Add batch.
-    #         im = tf.expand_dims(im, 0)
-    #         im = tf.image.resize_area(im, [out_h, out_w])
-    #         im = im[0]
-    #
-    #     with gfile.Open(os.path.join(data_dir, '%s.txt' % split), 'r') as f:
-    #         frames = f.readlines()
-    #         frames = [k.rstrip() for k in frames]
-    #         seg = tf.expand_dims(seg, 0)
-    #         seg = tf.image.resize_area(seg, [out_h, out_w])
-    #         seg = seg[0]
-    #         fx = intrinsics[0, 0] * x_scaling
-    #         fy = intrinsics[1, 1] * y_scaling
-    #         cx = intrinsics[0, 2] * x_scaling
-    #         cy = intrinsics[1, 2] * y_scaling
-    #         intrinsics = cls.make_intrinsics_matrix(fx, fy, cx, cy)
-    #         return im, seg, intrinsics
-    #
-    #     # Random cropping
-    #     def crop_randomly(im, seg, intrinsics, out_h, out_w):
-    #         """Crops image and adjust intrinsics accordingly."""
-    #         # batch_size, in_h, in_w, _ = im.get_shape().as_list()
-    #         in_h, in_w, _ = tf.unstack(tf.shape(im))
-    #         offset_y = tf.random_uniform([1], 0, in_h - out_h + 1, dtype=tf.int32)[0]
-    #         offset_x = tf.random_uniform([1], 0, in_w - out_w + 1, dtype=tf.int32)[0]
-    #         im = tf.image.crop_to_bounding_box(im, offset_y, offset_x, out_h, out_w)
-    #         seg = tf.image.crop_to_bounding_box(seg, offset_y, offset_x, out_h, out_w)
-    #         fx = intrinsics[0, 0]
-    #         fy = intrinsics[1, 1]
-    #         cx = intrinsics[0, 2] - tf.cast(offset_x, dtype=tf.float32)
-    #         cy = intrinsics[1, 2] - tf.cast(offset_y, dtype=tf.float32)
-    #         intrinsics = cls.make_intrinsics_matrix(fx, fy, cx, cy)
-    #         return im, seg, intrinsics
-    #
-    #     im, seg, intrinsics = scale_randomly(im, seg, intrinsics)
-    #     im, seg, intrinsics = crop_randomly(im, seg, intrinsics, out_h, out_w)
-    #     return im, seg, intrinsics
-    #
-    #
-    # @classmethod
-    # def make_intrinsics_matrix(cls, fx, fy, cx, cy):
-    #     r1 = tf.stack([fx, 0, cx])
-    #     r2 = tf.stack([0, fy, cy])
-    #     r3 = tf.constant([0., 0., 1.])
-    #     intrinsics = tf.stack([r1, r2, r3])
-    #     return intrinsics
-    #
-    # @classmethod
-    # def get_multi_scale_intrinsics(cls, intrinsics, num_scales):
-    #     """Returns multiple intrinsic matrices for different scales."""
-    #     intrinsics_multi_scale = []
-    #     # Scale the intrinsics accordingly for each scale
-    #     for s in range(num_scales):
-    #         fx = intrinsics[0, 0] / (2 ** s)
-    #         fy = intrinsics[1, 1] / (2 ** s)
-    #         cx = intrinsics[0, 2] / (2 ** s)
-    #         cy = intrinsics[1, 2] / (2 ** s)
-    #         intrinsics_multi_scale.append(cls.make_intrinsics_matrix(fx, fy, cx, cy))
-    #     intrinsics_multi_scale = tf.stack(intrinsics_multi_scale)
-    #     return intrinsics_multi_scale
