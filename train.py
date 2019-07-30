@@ -37,7 +37,7 @@ from struct2depth import reader
 from struct2depth import util
 
 # Isaac SDK imports
-ROOT_DIR = os.path.abspath("/mnt/isaac/")  # Root directory of the Isaac
+ROOT_DIR = os.path.abspath("/data/repositories/isaac/")  # Root directory of the Isaac
 sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 from pinhole_to_tensor import PinholeToTensor
@@ -68,7 +68,7 @@ flags.DEFINE_float('icp_weight', 0.0, 'ICP loss weight.')
 flags.DEFINE_float('size_constraint_weight', 0.0005, 'Weight of the object '
                                                      'size constraint loss. Use only when motion handling is '
                                                      'enabled.')
-flags.DEFINE_integer('batch_size', 4, 'The size of a sample batch')
+flags.DEFINE_integer('batch_size', 20, 'The size of a sample batch')
 flags.DEFINE_integer('img_height', 128, 'Input frame height.')
 flags.DEFINE_integer('img_width', 416, 'Input frame width.')
 flags.DEFINE_integer('seq_length', 3, 'Number of frames in sequence.')
@@ -94,16 +94,16 @@ flags.DEFINE_enum('flipping_mode', reader.FLIP_RANDOM,
                   'Determines the image flipping mode: if random, performs '
                   'on-the-fly augmentation. Otherwise, flips the input images '
                   'always or never, respectively.')
-flags.DEFINE_string('pretrained_ckpt', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt', 'Path to checkpoint with '
+flags.DEFINE_string('pretrained_ckpt', '/data/repositories/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt', 'Path to checkpoint with '
                                              'pretrained weights.  Do not include .data* extension.')
-flags.DEFINE_string('imagenet_ckpt', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt', 'Initialize the weights according '
+flags.DEFINE_string('imagenet_ckpt', '/data/repositories/isaac/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt', 'Initialize the weights according '
                                            'to an ImageNet-pretrained checkpoint. Requires '
                                            'architecture to be ResNet-18.')
-flags.DEFINE_string('checkpoint_dir', '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts/ckpts_40_delay_sim_2',
+flags.DEFINE_string('checkpoint_dir', '/data/repositories/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts/ckpts_40_delay_sim',
                     'Directory to save model '
                     'checkpoints.')
 flags.DEFINE_integer('train_steps', 10000000, 'Number of training steps.')
-flags.DEFINE_integer('summary_freq', 4, 'Save summaries every N steps.')
+flags.DEFINE_integer('summary_freq', 1, 'Save summaries every N steps.')
 flags.DEFINE_bool('depth_upsampling', True, 'Whether to apply depth '
                                             'upsampling of lower-scale representations before warping to '
                                             'compute reconstruction loss on full-resolution image.')

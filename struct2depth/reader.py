@@ -33,7 +33,7 @@ import util
 from process_image import ImageProcessor
 
 # Isaac SDK imports
-ROOT_DIR = os.path.abspath("/mnt/isaac/")  # Root directory of the Isaac
+ROOT_DIR = os.path.abspath("/data/repositories/isaac/")  # Root directory of the Isaac
 sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 import packages.ml

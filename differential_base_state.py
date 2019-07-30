@@ -3,7 +3,7 @@ import os
 import sys
 
 # Root directory of the Isaac
-ROOT_DIR = os.path.abspath("/usr/local/lib/isaac")
+ROOT_DIR = os.path.abspath("/data/repositories/isaac")
 sys.path.append(ROOT_DIR)
 
 from engine.pyalice import *
@@ -45,6 +45,6 @@ class DifferentialBaseState(Codelet):
         combined_speed = "{}".format(speed) + ", {}".format(angular_speed)
 
         # Write to a file. Overwritten for each new speed change
-        f = open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv', 'w')
+        f = open('/data/repositories/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv', 'w')
         f.write(combined_speed)
         f.close()

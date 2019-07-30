@@ -15,7 +15,7 @@ from absl import logging
 import datetime
 
 # Root directory of the Isaac
-ROOT_DIR = os.path.abspath("/mnt/isaac")
+ROOT_DIR = os.path.abspath("/data/repositories/isaac")
 sys.path.append(ROOT_DIR)
 
 from engine.pyalice import *
@@ -86,7 +86,7 @@ while True:
         print("waiting for samples: {}".format(num))
 
     # Retrieve differential base speed from file
-    with open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
+    with open('/data/repositories/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
         csv_reader = csv.reader(speed_file, delimiter=',')
         for row in csv_reader:
             speed = float(row[0])
@@ -111,10 +111,10 @@ while True:
                                                                          images[i + 2][0]]))
 
             # Save to directory
-            cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/sim_images/sim_images_40_delay/{}.png'.format(count),
+            cv2.imwrite('/data/repositories/isaac/apps/carter_sim_struct2depth/sim_images/sim_images_40_delay/{}.png'.format(count),
                         np.uint8(big_img))
-            cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/sim_seg_masks/{}-fseg.png'.format(count), big_seg_img)
-            f = open('/mnt/isaac/apps/carter_sim_struct2depth/sim_intrinsics/{}.csv'.format(count), 'w')
+            cv2.imwrite('/data/repositories/isaac/apps/carter_sim_struct2depth/sim_seg_masks/{}-fseg.png'.format(count), big_seg_img)
+            f = open('/data/repositories/isaac/apps/carter_sim_struct2depth/sim_intrinsics/{}.csv'.format(count), 'w')
             f.write(intrinsics)
             f.close()
 
