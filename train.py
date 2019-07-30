@@ -64,7 +64,7 @@ flags.DEFINE_float('icp_weight', 0.0, 'ICP loss weight.')
 flags.DEFINE_float('size_constraint_weight', 0.0005, 'Weight of the object '
                                                      'size constraint loss. Use only when motion handling is '
                                                      'enabled.')
-flags.DEFINE_integer('batch_size', 32, 'The size of a sample batch')
+flags.DEFINE_integer('batch_size', 20, 'The size of a sample batch')
 flags.DEFINE_integer('img_height', 128, 'Input frame height.')
 flags.DEFINE_integer('img_width', 416, 'Input frame width.')
 flags.DEFINE_integer('seq_length', 3, 'Number of frames in sequence.')
@@ -90,12 +90,12 @@ flags.DEFINE_enum('flipping_mode', reader.FLIP_RANDOM,
                   'Determines the image flipping mode: if random, performs '
                   'on-the-fly augmentation. Otherwise, flips the input images '
                   'always or never, respectively.')
-flags.DEFINE_string('pretrained_ckpt', None, 'Path to checkpoint with '
+flags.DEFINE_string('pretrained_ckpt', '/data/repositories/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt', 'Path to checkpoint with '
                                              'pretrained weights.  Do not include .data* extension.')
 flags.DEFINE_string('imagenet_ckpt', '/data/repositories/isaac/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt', 'Initialize the weights according '
                                            'to an ImageNet-pretrained checkpoint. Requires '
                                            'architecture to be ResNet-18.')
-flags.DEFINE_string('checkpoint_dir', '/data/repositories/isaac_ckpts/ckpts_2/',
+flags.DEFINE_string('checkpoint_dir', '/data/repositories/isaac_ckpts/ckpts_s2d_pretrained/',
                     'Directory to save model '
                     'checkpoints.')
 flags.DEFINE_integer('train_steps', 10000000, 'Number of training steps.')
@@ -260,7 +260,7 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
             pretrain_restorer.restore(sess, ckpt_path)
 
         logging.info('Attempting to resume training from %s...', checkpoint_dir)
-        checkpoint = tf.train.latest_checkpoint('/data/repositories/isaac_ckpts/ckpts_2/')
+        checkpoint = tf.train.latest_checkpoint('/data/repositories/isaac_ckpts/ckpts_3/')
         logging.info('Last checkpoint found: %s', checkpoint)
         if checkpoint:
             saver.restore(sess, checkpoint)

@@ -27,6 +27,11 @@ class DifferentialBaseState(Codelet):
         speed = self.rx.get_proto().linearSpeed
         angular_speed = self.rx.get_proto().angularSpeed
 
+        if speed <= 1e-3:
+            speed = 0
+        if angular_speed <= 1e-3:
+            angular_speed = 0
+
         # Combine into a string format
         combined_speed = "{}, {}".format(speed, angular_speed)
 
