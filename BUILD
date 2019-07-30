@@ -84,38 +84,6 @@ py_binary(
 )
 
 py_binary(
-    name = "optimize_sim",
-    srcs = [
-        "differential_base_state.py",
-        "pinhole_to_tensor.py",
-        "optimize_sim.py",
-    ],
-    data = [
-        "pinhole_to_tensor.config.json",
-        "pinhole_to_tensor.graph.json",
-        ":base_control.graph.json",
-        ":carter.config.json",
-        ":carter.graph.json",
-        ":navigation.config.json",
-        ":navigation.graph.json",
-        "//apps:py_init",
-        "//apps/assets/maps",
-        "//messages:core_messages",
-        "//packages/flatsim:libflatsim_module.so",
-        "//packages/map:libmap_module.so",
-        "//packages/ml:libml_module.so",
-        "//packages/navigation:libnavigation_module.so",
-        "//packages/perception:libperception_module.so",
-        "//packages/planner:libplanner_module.so",
-        "//packages/viewers:libviewers_module.so",
-    ],
-    deps = [
-        "//engine/pyalice",
-        "//packages/ml:pyml",
-    ],
-)
-
-py_binary(
     name = "train",
     srcs = [
         "differential_base_state.py",
@@ -126,7 +94,7 @@ py_binary(
         "pinhole_to_tensor.config.json",
         "pinhole_to_tensor.graph.json",
         ":base_control.graph.json",
-        ":carter.config.json",
+        ":carter_server.config.json",
         ":carter.graph.json",
         ":navigation.config.json",
         ":navigation.graph.json",
