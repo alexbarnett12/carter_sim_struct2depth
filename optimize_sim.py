@@ -300,13 +300,13 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app):
         step = 1
         while True:
             if model_ckpt is not None:
-                logging.info('Restored weights from %s', ckpt_path)
+                # logging.info('Restored weights from %s', ckpt_path)
                 pretrain_restorer.restore(sess, ckpt_path)
             if not gfile.Exists(output_dir):
                 gfile.MakeDirs(output_dir)
 
             # Run fine-tuning.
-            logging.info('Training:')
+            # logging.info('Training:')
             fetches = {
                 'train': train_model.train_op,
                 'global_step': train_model.global_step,
