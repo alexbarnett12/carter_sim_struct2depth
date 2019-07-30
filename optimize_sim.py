@@ -47,6 +47,7 @@ ROOT_DIR = os.path.abspath("/mnt/isaac/")  # Root directory of the Isaac
 sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 import packages.ml
+from differential_base_state import DifferentialBaseState
 
 # Map strings
 WAREHOUSE = 'carter_warehouse_p'
@@ -216,6 +217,9 @@ def main(_):
     isaac_app.load_graph(FLAGS.map_graph_filename)
     isaac_app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
 
+    # Register custom Isaac codelets
+    isaac_app.register({"differential_base_state": DifferentialBaseState})
+
     # Start the application and Sight server
     isaac_app.start_webserver()
     isaac_app.start()
@@ -280,6 +284,11 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app):
     failed_heuristic = []
     with sv.managed_session(config=config) as sess:
         # TODO: Caching the weights would be better to avoid I/O bottleneck.
+
+        # Start the application and Sight server
+        isaac_app.start_webserver()
+        isaac_app.start()
+        logging.info("Isaac application loaded")
 
         node = isaac_app.find_node_by_name("CarterTrainingSamples")
         bridge = packages.ml.SampleAccumulator(node)
