@@ -3,7 +3,7 @@ import os
 import sys
 
 # Root directory of the Isaac
-ROOT_DIR = os.path.abspath("/usr/local/lib/isaac")
+ROOT_DIR = os.path.abspath("/mnt/isaac")
 sys.path.append(ROOT_DIR)
 
 from engine.pyalice import *
