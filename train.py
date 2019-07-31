@@ -112,7 +112,7 @@ flags.DEFINE_string('imagenet_ckpt',
                     'to an ImageNet-pretrained checkpoint. Requires '
                     'architecture to be ResNet-18.')
 flags.DEFINE_string('checkpoint_dir',
-                    '/mnt/ckpts/sim/warehouse/40_delay_pretrained_7_31',
+                    '/mnt/ckpts/sim/warehouse/40_delay_pretrained_7_31_2',
                     'Directory to save model '
                     'checkpoints.')
 flags.DEFINE_integer('train_steps', 10000000, 'Number of training steps.')
