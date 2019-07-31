@@ -58,16 +58,16 @@ flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter.graph
                     'Where the isaac SDK app graph is stored')
 flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter.config.json",
                     'Where the isaac SDK app node configuration is stored')
-flags.DEFINE_string('map_config_filename', "apps/assets/maps/" + HOSPITAL + ".config.json",
+flags.DEFINE_string('map_config_filename', "apps/assets/maps/" + WAREHOUSE + ".config.json",
                     "Config file for Isaac Sim map")
-flags.DEFINE_string('map_graph_filename', "apps/assets/maps/" + HOSPITAL + ".graph.json",
+flags.DEFINE_string('map_graph_filename', "apps/assets/maps/" + WAREHOUSE + ".graph.json",
                     "Graph file for Isaac Sim map")
 
 # Tensorflow flags
 flags.DEFINE_string('data_dir', '/mnt',
                     'Preprocessed data.')
 flags.DEFINE_string('file_extension', 'png', 'Image data file extension.')
-flags.DEFINE_float('learning_rate', 0.00002, 'Adam learning rate.')
+flags.DEFINE_float('learning_rate', 0.0002, 'Adam learning rate.')
 flags.DEFINE_float('beta1', 0.9, 'Adam momentum.')
 flags.DEFINE_float('reconstr_weight', 0.85, 'Frame reconstruction loss weight.')
 flags.DEFINE_float('ssim_weight', 0.15, 'SSIM loss weight.')
@@ -112,7 +112,7 @@ flags.DEFINE_string('imagenet_ckpt',
                     'to an ImageNet-pretrained checkpoint. Requires '
                     'architecture to be ResNet-18.')
 flags.DEFINE_string('checkpoint_dir',
-                    '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/ckpts/ckpts_40_delay_hospital',
+                    '/mnt/ckpts/sim/warehouse/40_delay_pretrained_7_31',
                     'Directory to save model '
                     'checkpoints.')
 flags.DEFINE_integer('train_steps', 10000000, 'Number of training steps.')
