@@ -124,10 +124,10 @@ while True:
                                                                          images[i + 2][0]]))
 
             # Save to directory
-            cv2.imwrite('/data/repositories/isaac/apps/carter_sim_struct2depth/sim_images/sim_images_40_delay_hospital/{}.png'.format(count),
+            cv2.imwrite('/data/repositories/sim_images/sim_images_40_delay_hospital/{}.png'.format(count),
                         np.uint8(big_img))
-            cv2.imwrite('/data/repositories/isaac/apps/carter_sim_struct2depth/sim_seg_masks/{}-fseg.png'.format(count), big_seg_img)
-            f = open('/data/repositories/isaac/apps/carter_sim_struct2depth/sim_intrinsics/{}.csv'.format(count), 'w')
+            cv2.imwrite('/data/repositories/sim_seg_masks/{}.png'.format(count), big_seg_img)
+            f = open('/data/repositories/sim_intrinsics/{}.csv'.format(count), 'w')
             f.write(intrinsics)
             f.close()
 

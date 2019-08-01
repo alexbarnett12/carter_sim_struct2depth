@@ -64,7 +64,7 @@ SEQ_LENGTH = 3  # Number of images in stack. Currently only works with 3
 HEIGHT = 128  # Image height
 WIDTH = 416  # Image width
 TRIPLET_WIDTH = WIDTH * SEQ_LENGTH  # Width of wide image created to pair images in time
-TIME_DELAY = 0.4  # Seconds
+TIME_DELAY = 0.3  # Seconds
 FLIP_RANDOM = 'random'  # Always perform random flipping of input images.
 FLIP_ALWAYS = 'always'  # Always flip image input, used for test augmentation.
 FLIP_NONE = 'none'  # Always disables flipping.
@@ -95,7 +95,7 @@ class DataReader(object):
         self.shuffle = shuffle
         self.input_file = input_file
         self.isaac_app = isaac_app
-        self.steps_per_epoch = 1000
+        self.steps_per_epoch = 10000
         self.speed = 1000
         self.angular_speed = 1000
         self.optimize = optimize
