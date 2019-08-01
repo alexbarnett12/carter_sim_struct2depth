@@ -87,7 +87,7 @@ isaac_app.start()
 
 img_processor = ImageProcessor()
 
-count = 0
+count = 1300
 gct = 0
 while True:
     # Retrieve rgb images from isaac sim
@@ -99,11 +99,21 @@ while True:
         print("waiting for samples: {}".format(num))
 
     # Retrieve differential base speed from file
+    speed = 0
+    angular_speed = 0
     with open('/data/repositories/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
         csv_reader = csv.reader(speed_file, delimiter=',')
         for row in csv_reader:
-            speed = float(row[0])
-            angular_speed = float(row[1])
+            try:
+                float(row[0])
+                speed = float(row[0])
+            except ValueError:
+                speed = 0
+            try:
+                float(row[1])
+                angular_speed = float(row[1])
+            except ValueError:
+                angular_speed = 0
 
     # Only save image if the robot is moving or rotating above a threshold speed
     # Images below these thresholds do not have a great enough disparity for the network to learn depth.
@@ -112,7 +122,9 @@ while True:
         # print("{} Samples acquired".format(kSampleNumbers))
         while np.shape(images)[0] < SEQ_LENGTH:
             time.sleep(TIME_DELAY)
-            images = np.concatenate((images, bridge.acquire_samples(sample_num)))
+            new_image = bridge.acquire_samples(sample_num)
+            if np.shape(new_image) == (1, 1, 128, 416, 3):
+                images = np.concatenate((images, new_image))
 
         # Create wide image and segmentation triplets
         image_seq = []
