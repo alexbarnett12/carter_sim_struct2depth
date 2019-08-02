@@ -200,7 +200,6 @@ def get_vars_to_save_and_restore(ckpt=None):
         # Check if shapes match.
         ind = ckpt_var_names.index(v.op.name)
         if ckpt_var_shapes[ind] == v.get_shape():
-          print("Shapes match!")
           mapping[v.op.name] = v
           # not_loaded.remove(v.op.name)
         else:
@@ -229,7 +228,6 @@ def get_imagenet_vars_to_restore(imagenet_ckpt):
     mvname_noprefix = mvname_noprefix.replace('moving_variance', 'sigma')
     if mvname_noprefix in ckpt_var_names:
       vars_to_restore_imagenet[mvname_noprefix] = v
-      print("Restored!")
     else:
       logging.info('The following variable will not be restored from '
                    'pretrained ImageNet-checkpoint: %s', mvname_noprefix)

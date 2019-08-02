@@ -34,7 +34,7 @@ import util
 from process_image import ImageProcessor
 
 # Isaac SDK imports
-ROOT_DIR = os.path.abspath("/mnt/isaac/")  # Root directory of the Isaac
+ROOT_DIR = os.path.abspath("/mnt/isaac_2019_2/")  # Root directory of the Isaac
 sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 import packages.ml
@@ -96,31 +96,37 @@ class DataReader(object):
         self.input_file = input_file
         self.isaac_app = isaac_app
         self.steps_per_epoch = 1000
-        self.speed = 1000
-        self.angular_speed = 1000
+        self.speed_x = 0
+        self.speed_y = 0
+        self.angular_speed = 0
         self.optimize = optimize
         self.repetitions = repetitions
 
     # Retrieve current robot linear and angular speed from Isaac Sim
     def update_speed(self):
-        with open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
+        with open('/mnt/isaac_2019_2/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
             csv_reader = csv.reader(speed_file, delimiter=',')
             for row in csv_reader:
-                if len(row) == 2:
+                if len(row) == 3:
                     try:
                         float(row[0])
-                        self.speed = float(row[0])
+                        self.speed_x = float(row[0])
                     except ValueError:
-                        self.speed = 0
+                        self.speed_x = 0
                     try:
                         float(row[1])
-                        self.angular_speed = float(row[1])
+                        self.speed_y = float(row[1])
+                    except ValueError:
+                        self.speed_y = 0
+                    try:
+                        float(row[2])
+                        self.angular_speed = float(row[2])
                     except ValueError:
                         self.angular_speed = 0
 
     # Check if Isaac Sim bridge has samples
     def has_samples(self, bridge):
-        return bridge.get_sample_number() >= self.sample_numbers
+        return bridge.get_sample_count() >= self.sample_numbers
 
     # Create a training sample generator from Isaac Sim.
     # bridge is the SampleAccumulator node that feeds image data
@@ -142,14 +148,10 @@ class DataReader(object):
 
                 # Only save image if the robot is moving or rotating above a threshold speed
                 # Images below these thresholds do not have a great enough disparity for the network to learn depth.
-                if self.speed > 0.1 or self.angular_speed > 0.15:
+                if self.speed_x > 0.1 or self.speed_y > 0.1 or self.angular_speed > 0.15:
                     images = []
                     # Retrieve a total of (batch_size * seq_length) images
                     for i in range(self.batch_size * self.seq_length):
-
-                        # Wait for images to accumulate
-                        while not self.has_samples(bridge):
-                            time.sleep(TIME_DELAY)
 
                         # Acquire image
                         new_image = bridge.acquire_samples(self.sample_numbers)

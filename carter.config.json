@@ -1,4 +1,15 @@
 {
+  "LeftColorCameraEncoder": {
+	"isaac.ml.ColorCameraEncoderCuda": {
+	    "rows": 128,
+	    "cols": 416
+	}
+  },
+    "CarterTrainingSamples": {
+      "isaac.ml.SampleAccumulator": {
+        "sample_buffer_size": 1
+      }
+    },
   "shared_robot_model": {
     "DifferentialBaseModel": {
       "robot_radius": 0.5,
@@ -10,15 +21,7 @@
     "initial_pose": {
       "lhs_frame": "world",
       "rhs_frame": "robot_init",
-      "pose": [
-        1,
-        0.0,
-        0.0,
-        0,
-        0,
-        0.0,
-        0.0
-      ],
+      "pose": [1, 0.0, 0.0, 0, 0, 0.0, 0.0],
       "attach_interactive_marker": true
     }
   },
@@ -71,13 +74,6 @@
       "camera_name": "left_camera"
     }
   },
-  "MonoDepthCameraViewer": {
-    "isaac.viewers.DepthCameraViewer": {
-      "target_fps": 15,
-      "reduce_scale": 2,
-      "camera_name": "left_camera"
-    }
-  },
   "LeftSegmentationCameraViewer": {
     "isaac.viewers.SegmentationCameraViewer": {
       "target_fps": 15,
@@ -96,15 +92,7 @@
     "lidar_initializer": {
       "lhs_frame": "robot",
       "rhs_frame": "lidar",
-      "pose": [
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        -0.06,
-        0.0,
-        0.62
-      ]
+      "pose": [1.0, 0.0, 0.0, 0.0, -0.06, 0.0, 0.62]
     },
     "isaac.alice.TcpSubscriber": {
       "port": 5000,
@@ -127,45 +115,18 @@
     "left_camera_initializer": {
       "lhs_frame": "robot",
       "rhs_frame": "left_camera",
-      "pose": [
-        0.5,
-        -0.5,
-        0.5,
-        -0.5,
-        0.11,
-        0.06,
-        0.55
-      ]
+      "pose": [0.5, -0.5, 0.5, -0.5, 0.11, 0.06, 0.55]
     },
     "isaac.alice.TcpSubscriber": {
       "port": 5003,
       "host": "localhost"
     }
   },
-  "LeftColorCameraEncoder": {
-    "isaac.ml.ColorCameraEncoder": {
-      "rows": 128,
-      "cols": 416
-    }
-  },
-    "CarterTrainingSamples": {
-	"isaac.ml.SampleAccumulator": {
-	    "sample_buffer_size": 1
-	}
-    },
   "RightCameraSubscriber": {
     "right_camera_initializer": {
       "lhs_frame": "robot",
       "rhs_frame": "right_camera",
-      "pose": [
-        0.5,
-        -0.5,
-        0.5,
-        -0.5,
-        0.11,
-        -0.06,
-        0.55
-      ]
+      "pose": [0.5, -0.5, 0.5, -0.5, 0.11, -0.06, 0.55]
     },
     "isaac.alice.TcpSubscriber": {
       "port": 5004,
@@ -178,11 +139,6 @@
       "enabled": false
     }
   },
-  "map_bridge": {
-    "isaac.map.MapBridge": {
-      "enabled": false
-    }
-  },
   "recorder_bridge": {
     "RecorderBridge": {
       "recorder_component_name": "recorder/isaac.alice.Recorder",
@@ -191,9 +147,8 @@
   },
   "websight": {
     "WebsightServer": {
-      "webroot": "packages/sight/webroot",
-      "assetroot": "../isaac_assets",
       "port": 3000,
+      "assetroot": "external/isaac_assets",
       "ui_config": {
         "windows": {
           "Carter Sim - Local View": {
@@ -212,7 +167,7 @@
                 "active": true
               },
               {
-                "name": "carter_sim/global_plan/isaac.planner.GlobalPlanner/path",
+                "name": "carter_sim/global_plan_smoother/smoother/smooth_plan.path",
                 "active": true
               },
               {
@@ -233,15 +188,11 @@
                 "active": true
               },
               {
-                "name": "carter_sim/global_plan/isaac.planner.GlobalPlanner/graph",
-                "active": true
-              },
-              {
                 "name": "carter_sim/global_plan/isaac.planner.GlobalPlanner/target",
                 "active": true
               },
               {
-                "name": "carter_sim/global_plan/isaac.planner.GlobalPlanner/path",
+                "name": "carter_sim/global_plan_smoother/smoother/smooth_plan.path",
                 "active": true
               },
               {
@@ -288,19 +239,6 @@
               }
             ]
           },
-          "Carter Sim - Mono Depth": {
-            "renderer": "2d",
-            "dims": {
-              "width": 480,
-              "height": 270
-            },
-            "channels": [
-              {
-                "name": "carter_sim/MonoDepthCameraViewer/isaac.viewers.DepthCameraViewer/Depth",
-                "active": true
-              }
-            ]
-          },
           "Carter Sim - Left Segmentation": {
             "renderer": "2d",
             "dims": {
@@ -337,12 +275,7 @@
             "obj": "apps/assets/carter.obj",
             "diffuse_map": "apps/assets/carter_albido.png",
             "normal_map": "apps/assets/carter_normal.png",
-            "rotation": [
-              -0.5,
-              -0.5,
-              0.5,
-              0.5
-            ],
+            "rotation": [-0.5, -0.5, 0.5, 0.5],
             "scale": 0.01
           }
         }

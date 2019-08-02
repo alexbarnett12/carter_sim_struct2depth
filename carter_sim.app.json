@@ -1,12 +1,14 @@
 {
   "name": "carter_sim",
   "config_files": [
-    "apps/carter_sim_mod/navigation.config.json",
-    "apps/carter_sim_mod/carter.config.json"
+    "apps/carter_sim_struct2depth/navigation.config.json",
+    "apps/carter_sim_struct2depth/carter.config.json",
+    "apps/assets/maps/carter_warehouse_p.config.json"
   ],
   "graph_files": [
-    "apps/carter_sim_mod/navigation.graph.json",
-    "apps/carter_sim_mod/carter.graph.json"
+    "apps/carter_sim_struct2depth/navigation.graph.json",
+    "apps/carter_sim_struct2depth/carter.graph.json",
+    "apps/assets/maps/carter_warehouse_p.graph.json"
   ],
   "modules": [
       "map",
@@ -15,8 +17,7 @@
       "planner",
       "viewers",
       "flatsim",
-      "//packages/ml:ml",
-      "//packages/ml:tensorflow"
+      "ml"
   ], 
   "config": {},
   "graph": {

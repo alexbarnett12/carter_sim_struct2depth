@@ -10,6 +10,10 @@
         {
           "name": "DifferentialBaseModel",
           "type": "isaac::planner::DifferentialBaseModel"
+        },
+        {
+          "name": "SphericalRobotShapeComponent",
+          "type": "isaac::planner::SphericalRobotShapeComponent"
         }
       ]
     },
@@ -79,7 +83,7 @@
         },
         {
           "name": "flatscan_viewer",
-          "type": "isaac::navigation::FlatscanViewer"
+          "type": "isaac::viewers::FlatscanViewer"
         },
         {
           "name": "robot_viewer",
@@ -144,6 +148,19 @@
         {
           "name": "isaac.navigation.BinaryToDistanceMap",
           "type": "isaac::navigation::BinaryToDistanceMap"
+        }
+      ]
+    },
+    {
+      "name": "global_plan_smoother",
+      "components": [
+        {
+          "name": "smoother",
+          "type": "isaac::planner::GlobalPlanSmoother"
+        },
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
         }
       ]
     },
@@ -265,12 +282,16 @@
       "target": "global_plan/isaac.navigation.BinaryToDistanceMap/binary_map"
     },
     {
-      "source": "lqr/isaac.planner.DifferentialBaseLqrPlanner/plan",
-      "target": "control/isaac.planner.DifferentialBaseControl/plan"
+      "source": "global_plan/isaac.planner.GlobalPlanner/plan",
+      "target": "global_plan_smoother/smoother/rough_plan"
     },
     {
-      "source": "global_plan/isaac.planner.GlobalPlanner/plan",
+      "source": "global_plan_smoother/smoother/smooth_plan",
       "target": "lqr/isaac.planner.DifferentialBaseLqrPlanner/global_plan"
+    },
+    {
+      "source": "lqr/isaac.planner.DifferentialBaseLqrPlanner/plan",
+      "target": "control/isaac.planner.DifferentialBaseControl/plan"
     },
     {
       "source": "go_to/isaac.navigation.GoTo/goal_out",
@@ -295,6 +316,10 @@
     {
       "source": "patrol/isaac.navigation.Patrol/goal",
       "target": "go_to/isaac.navigation.GoTo/goal_in"
+    },
+    {
+      "source": "go_to/isaac.navigation.GoTo/feedback",
+      "target": "patrol/isaac.navigation.Patrol/feedback"
     },
     {
       "source": "range_scan_flattening/isaac.perception.RangeScanFlattening/flatscan",

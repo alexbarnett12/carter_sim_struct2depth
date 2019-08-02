@@ -37,12 +37,11 @@ from struct2depth import reader
 from struct2depth import util
 
 # Isaac SDK imports
-ROOT_DIR = os.path.abspath("/mnt/isaac/")  # Root directory of the Isaac
+ROOT_DIR = os.path.abspath("/mnt/isaac_2019_2/")  # Root directory of the Isaac
 sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 from pinhole_to_tensor import PinholeToTensor
 from differential_base_state import DifferentialBaseState
-import packages.ml
 
 gfile = tf.gfile
 
@@ -112,7 +111,7 @@ flags.DEFINE_string('imagenet_ckpt',
                     'to an ImageNet-pretrained checkpoint. Requires '
                     'architecture to be ResNet-18.')
 flags.DEFINE_string('checkpoint_dir',
-                    '/mnt/ckpts/sim/warehouse/40_delay_pretrained_7_31_2',
+                    '/mnt/ckpts/sim/warehouse/40_delay_pretrained_8_2',
                     'Directory to save model '
                     'checkpoints.')
 flags.DEFINE_integer('train_steps', 10000000, 'Number of training steps.')
@@ -152,6 +151,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # GPU to run
 
 
 def main(_):
+    print("Current working directory: {}".format(os.getcwd()))
     # Fixed seed for repeatability
     seed = 8964
     tf.set_random_seed(seed)
@@ -195,24 +195,7 @@ def main(_):
         gfile.MakeDirs(FLAGS.checkpoint_dir)
 
     # Create Isaac application.
-    isaac_app = Application(name="carter_sim", modules=["map",
-                                                        "navigation",
-                                                        "perception",
-                                                        "planner",
-                                                        "viewers",
-                                                        "flatsim",
-                                                        "//packages/ml:ml"])
-
-    # Load config files
-    isaac_app.load_config(FLAGS.config_filename)
-    isaac_app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
-    isaac_app.load_config(FLAGS.map_config_filename)
-
-    # Load graph files
-    isaac_app.load_graph(FLAGS.graph_filename)
-    isaac_app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
-    isaac_app.load_graph(FLAGS.map_graph_filename)
-    isaac_app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
+    isaac_app = Application(app_filename="/mnt/isaac_2019_2/apps/carter_sim_struct2depth/carter_sim.app.json")
 
     # Register custom Isaac codelets
     isaac_app.register({"differential_base_state": DifferentialBaseState})
@@ -285,20 +268,8 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
         logging.info('Training...')
 
         # Start the application and Sight server
-        isaac_app.start_webserver()
         isaac_app.start()
         logging.info("Isaac application loaded")
-
-        node = isaac_app.find_node_by_name("CarterTrainingSamples")
-        bridge = packages.ml.SampleAccumulator(node)
-
-        # Wait until we get enough samples from Isaac
-        while True:
-            num = bridge.get_sample_number()
-            if num >= 1:
-                break
-            time.sleep(1.0)
-            logging.info("waiting for enough samples: {}".format(num))
 
         start_time = time.time()
         last_summary_time = time.time()

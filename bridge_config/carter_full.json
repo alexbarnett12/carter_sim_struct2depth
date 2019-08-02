@@ -1,4 +1,4 @@
 {
-  "graphs": ["/mnt/isaac/apps/carter_sim_struct2depth/bridge_config/carter_full_graph.json"],
-  "configs": ["/mnt/isaac/apps/carter_sim_struct2depth/bridge_config/carter_full_config.json"]
+  "graphs": ["/mnt/isaac_2019_2/apps/carter_sim_struct2depth/bridge_config/carter_full_graph.json"],
+  "configs": ["/mnt/isaac_2019_2/apps/carter_sim_struct2depth/bridge_config/carter_full_config.json"]
 }

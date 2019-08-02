@@ -62,7 +62,7 @@ TRIPLET_WIDTH = WIDTH * SEQ_LENGTH
 INPUT_NAME = 'input'
 OUTPUT_NAME = 'output'
 STEPSIZE = 1
-REPEAT = int(10000000/20)
+REPEAT = 100
 
 # Number of samples to acquire in batch
 kSampleNumbers = 1
