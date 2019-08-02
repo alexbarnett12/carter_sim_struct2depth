@@ -32,25 +32,34 @@ isaac_app(
     ],
 )
 
-isaac_app(
-    name = "carter_sim_inference",
-    app_json_file = "carter_sim.app.json",
+py_binary(
+    name = "train",
+    srcs = [
+        "differential_base_state.py",
+        "pinhole_to_tensor.py",
+        "train.py",
+    ],
     data = [
-        "carter.config.json",
-        "carter_inference.graph.json",
-        "navigation.config.json",
-        "navigation.graph.json",
+        ":carter_sim.app.json",
+        ":carter_server.config.json",
+        ":carter.graph.json",
+        ":navigation.config.json",
+        ":navigation.graph.json",
+        ":base_control.graph.json",
         "//apps/assets/maps",
         "//packages/map:libmap_module.so",
+        "//packages/flatsim:libflatsim_module.so",
+        "//packages/ml:libml_module.so",
+        "//packages/navigation:libnavigation_module.so",
+        "//packages/perception:libperception_module.so",
+        "//packages/planner:libplanner_module.so",
+        "//packages/viewers:libviewers_module.so",
+        "//apps:py_init",
+        "//messages:core_messages",
     ],
-    modules = [
-        "navigation",
-        "perception",
-        "planner",
-        "viewers",
-        "flatsim",
-        "//packages/ml:ml",
-        "//packages/ml:tensorflow",
+    deps = [
+        "//engine/pyalice",
+        "//packages/ml:pyml",
     ],
 )
 
@@ -116,37 +125,6 @@ py_binary(
 )
 
 py_binary(
-    name = "train",
-    srcs = [
-        "differential_base_state.py",
-        "pinhole_to_tensor.py",
-        "train.py",
-    ],
-    data = [
-        ":carter_sim.app.json",
-        ":carter_server.config.json",
-        ":carter.graph.json",
-        ":navigation.config.json",
-        ":navigation.graph.json",
-        ":base_control.graph.json",
-        "//apps/assets/maps",
-        "//packages/map:libmap_module.so",
-        "//packages/flatsim:libflatsim_module.so",
-        "//packages/ml:libml_module.so",
-        "//packages/navigation:libnavigation_module.so",
-        "//packages/perception:libperception_module.so",
-        "//packages/planner:libplanner_module.so",
-        "//packages/viewers:libviewers_module.so",
-        "//apps:py_init",
-        "//messages:core_messages",
-    ],
-    deps = [
-        "//engine/pyalice",
-        "//packages/ml:pyml",
-    ],
-)
-
-py_binary(
     name = "save_image_triplets",
     srcs = [
         "differential_base_state.py",
@@ -196,28 +174,6 @@ py_binary(
         "//packages/ml:pyml",
     ],
 )
-
-py_binary(
-    name = "pinhole_to_tensor",
-    srcs = [
-        "__init__.py",
-        "pinhole_to_tensor.py",
-    ],
-    data = [
-        "pinhole_to_tensor.config.json",
-        "pinhole_to_tensor.graph.json",
-        ":carter.config.json",
-        ":carter.graph.json",
-        "//apps:py_init",
-        "//messages:core_messages",
-        "//packages/ml:libml_module.so",
-    ],
-    deps = [
-        "//engine/pyalice",
-        "//packages/ml:pyml",
-    ],
-)
-
 isaac_app(
     name = "carter_sim_joystick",
     app_json_file = "carter_sim_joystick.app.json",
