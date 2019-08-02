@@ -55,7 +55,7 @@
           "type": "isaac::alice::TcpPublisher"
         },
         {
-          "name": "TimeSynchronizer",
+          "name": "isaac.aliceTimeSynchronizer",
           "type": "isaac::alice::TimeSynchronizer"
         }
       ]
@@ -72,7 +72,7 @@
           "type": "isaac::alice::TcpSubscriber"
         },
         {
-          "name": "TimeSynchronizer",
+          "name": "isaac.aliceTimeSynchronizer",
           "type": "isaac::alice::TimeSynchronizer"
         }
       ]
@@ -93,7 +93,7 @@
           "type": "isaac::alice::TcpSubscriber"
         },
         {
-          "name": "TimeSynchronizer",
+          "name": "isaac.aliceTimeSynchronizer",
           "type": "isaac::alice::TimeSynchronizer"
         }
       ]
@@ -179,7 +179,7 @@
           "type": "isaac::alice::TcpSubscriber"
         },
         {
-          "name": "TimeSynchronizer",
+          "name": "isaac.aliceTimeSynchronizer",
           "type": "isaac::alice::TimeSynchronizer"
         }
       ]
@@ -239,7 +239,7 @@
           "type": "isaac::alice::TcpSubscriber"
         },
         {
-          "name": "TimeSynchronizer",
+          "name": "isaac.aliceTimeSynchronizer",
           "type": "isaac::alice::TimeSynchronizer"
         }
       ]

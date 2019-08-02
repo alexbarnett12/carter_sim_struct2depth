@@ -73,7 +73,7 @@
       "name": "TimeSyncedTcpConnections",
       "components": [
         {
-          "name": "TimeSynchronizer",
+          "name": "isaac.aliceTimeSynchronizer",
           "type": "isaac::alice::TimeSynchronizer"
         },
         {
