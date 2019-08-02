@@ -124,7 +124,7 @@ py_binary(
     ],
     data = [
         ":carter_sim.app.json",
-        ":carter.config.json",
+        ":carter_server.config.json",
         ":carter.graph.json",
         ":navigation.config.json",
         ":navigation.graph.json",
