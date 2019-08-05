@@ -21,7 +21,7 @@ class DifferentialBaseState(Codelet):
         self.tick_on_message(self.rx)
 
     def tick(self):
-        # Extract current linear velocity from rx
+        # Extract velocity from rx
         speed_x = self.rx.get_proto().speedX
         speed_y = self.rx.get_proto().speedY
         angular_speed = self.rx.get_proto().angularSpeed
