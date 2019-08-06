@@ -1,0 +1,32 @@
+{
+  "name": "carter_sim",
+  "config_files": [
+    "apps/carter_sim_struct2depth/navigation.config.json",
+    "apps/carter_sim_struct2depth/carter_server_2.config.json",
+    "apps/assets/maps/carter_warehouse_p.config.json"
+  ],
+  "graph_files": [
+    "apps/carter_sim_struct2depth/navigation.graph.json",
+    "apps/carter_sim_struct2depth/carter.graph.json",
+    "apps/assets/maps/carter_warehouse_p.graph.json"
+  ],
+  "modules": [
+      "map",
+      "navigation",
+      "perception",
+      "planner",
+      "viewers",
+      "flatsim",
+      "ml"
+  ],
+  "config": {},
+  "graph": {
+    "nodes": [],
+    "edges": [
+      {
+        "source": "control/isaac.planner.DifferentialBaseControl/cmd",
+        "target": "base_simulation/isaac.flatsim.DifferentialBaseSimulator/diff_base_command"
+      }
+    ]
+  }
+}
