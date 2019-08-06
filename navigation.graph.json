@@ -258,12 +258,29 @@
           "type": "isaac::navigation::SelectorBehavior"
         }
       ]
+    },
+    {
+      "name": "differential_base_state",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.alice.PyCodelet",
+          "type": "isaac::alice::PyCodelet"
+        }
+      ]
     }
   ],
   "edges": [
     {
       "source": "segway_odometry/isaac.navigation.DifferentialBaseOdometry/odometry",
       "target": "lqr/isaac.planner.DifferentialBaseLqrPlanner/odometry"
+    },
+    {
+      "source": "segway_odometry/isaac.navigation.DifferentialBaseOdometry/odometry",
+      "target": "differential_base_state/isaac.alice.PyCodelet/differential_state"
     },
     {
       "source": "local_map/isaac.navigation.LocalMap/local_map",

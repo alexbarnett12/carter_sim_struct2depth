@@ -57,11 +57,10 @@ gct = 0
 while True:
     # Retrieve rgb images from isaac sim
     while True:
-        num = bridge.get_sample_number()
-        if num >= buffer_size:
+        if bridge.get_sample_count() >= buffer_size:
             break
         time.sleep(TIME_DELAY)
-        print("waiting for samples: {}".format(num))
+        print("waiting for samples: {}".format(bridge.get_sample_count()))
 
     # Retrieve differential base speed from file
     with open('/mnt/isaac_2019_2/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
@@ -72,9 +71,9 @@ while True:
 
     # Only save image if the robot is moving or rotating above a threshold speed
     # Images below these thresholds do not have a great enough disparity for the network to learn depth.
-    if speed > 0.1 or angular_speed > 0.15:
+    if speed > 0.25 or angular_speed > 0.25:
         images = bridge.acquire_samples(sample_num)
-        # print("{} Samples acquired".format(kSampleNumbers))
+
         while np.shape(images)[0] < SEQ_LENGTH:
             time.sleep(TIME_DELAY)
             images = np.concatenate((images, bridge.acquire_samples(sample_num)))
@@ -89,10 +88,10 @@ while True:
                                                                          images[i + 2][0]]))
 
             # Save to directory
-            cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/sim_images/sim_images_40_delay/{}.png'.format(count),
+            cv2.imwrite('/mnt/sim_images/test/{}.png'.format(count),
                         np.uint8(big_img))
-            cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/sim_seg_masks/{}-fseg.png'.format(count), big_seg_img)
-            f = open('/mnt/isaac/apps/carter_sim_struct2depth/sim_intrinsics/{}.csv'.format(count), 'w')
+            cv2.imwrite('/mnt/sim_seg_masks/test/{}-fseg.png'.format(count), big_seg_img)
+            f = open('/mnt/sim_intrinsics/test/{}.csv'.format(count), 'w')
             f.write(intrinsics)
             f.close()
 

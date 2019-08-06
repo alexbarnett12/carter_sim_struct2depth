@@ -211,19 +211,6 @@
       ]
     },
     {
-      "name": "differential_base_state",
-      "components": [
-        {
-          "name": "message_ledger",
-          "type": "isaac::alice::MessageLedger"
-        },
-        {
-          "name": "isaac.alice.PyCodelet",
-          "type": "isaac::alice::PyCodelet"
-        }
-      ]
-    },
-    {
       "name": "RightCameraSubscriber",
       "components": [
         {
@@ -335,10 +322,6 @@
     {
       "source": "base_simulation/isaac.flatsim.DifferentialBaseSimulator/diff_base_state",
       "target": "segway_odometry/isaac.navigation.DifferentialBaseOdometry/state"
-    },
-    {
-      "source": "base_simulation/isaac.flatsim.DifferentialBaseSimulator/diff_base_state",
-      "target": "differential_base_state/isaac.alice.PyCodelet/differential_state"
     }
   ]
 }

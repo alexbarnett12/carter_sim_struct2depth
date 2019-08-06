@@ -96,8 +96,7 @@ class DataReader(object):
         self.input_file = input_file
         self.isaac_app = isaac_app
         self.steps_per_epoch = 1000
-        self.speed_x = 0
-        self.speed_y = 0
+        self.speed = 0
         self.angular_speed = 0
         self.optimize = optimize
         self.repetitions = repetitions
@@ -108,22 +107,9 @@ class DataReader(object):
         with open('/mnt/isaac_2019_2/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
             csv_reader = csv.reader(speed_file, delimiter=',')
             for row in csv_reader:
-                if len(row) == 3:
-                    try:
-                        float(row[0])
-                        self.speed_x = float(row[0])
-                    except ValueError:
-                        self.speed_x = 0
-                    try:
-                        float(row[1])
-                        self.speed_y = float(row[1])
-                    except ValueError:
-                        self.speed_y = 0
-                    try:
-                        float(row[2])
-                        self.angular_speed = float(row[2])
-                    except ValueError:
-                        self.angular_speed = 0
+                if len(row) == 2:
+                    self.speed = float(row[0])
+                    self.angular_speed = float(row[1])
 
     # Check if Isaac Sim bridge has samples
     def has_samples(self, bridge):
@@ -142,56 +128,62 @@ class DataReader(object):
                 seg_mask_batch = np.zeros((0, self.img_height, self.img_width * self.seq_length, 3))
 
                 images = []
-                # Retrieve a total of (batch_size * seq_length) images
-                for i in range(self.batch_size * self.seq_length):
 
-                    # Wait until we get enough samples from Isaac
-                    while not self.has_samples(bridge):
+                self.update_speed()
+
+                # Only collect samples if robot is moving faster than a certain threshold
+                if self.speed > 0.25 or self.angular_speed > 0.25:
+
+                    # Retrieve a total of (batch_size * seq_length) images
+                    for i in range(self.batch_size * self.seq_length):
+
+                        # Wait until we get enough samples from Isaac
+                        while not self.has_samples(bridge):
+                            time.sleep(TIME_DELAY)
+
+                        # Acquire image
+                        new_image = bridge.acquire_samples(self.sample_numbers)
+
+                        # Add image to list
+                        images.append(np.squeeze(new_image))
+
+                        # Wait to increase disparity between images
                         time.sleep(TIME_DELAY)
 
-                    # Acquire image
-                    new_image = bridge.acquire_samples(self.sample_numbers)
+                        # TODO: Turn seg mask generator into an Isaac node
+                        # TODO: Fix MRCNN to work within another tf.Graph()
+                        # Create wide image and segmentation triplets
+                        if (i + 1) % self.seq_length == 0:
+                            image_seq, seg_mask_seq = img_processor.process_image([images[i - 2],
+                                                                                   images[i - 1],
+                                                                                   images[i]])
 
-                    # Add image to list
-                    images.append(np.squeeze(new_image))
+                            if self.optimize:
+                                repetitions = self.repetitions
+                            else:
+                                repetitions = 1
+                            for j in range(repetitions):
+                                # Add to total image lists; add repetitions if performing online refinement
+                                image_batch = np.append(image_batch, np.expand_dims(image_seq, axis=0), axis=0)
+                                seg_mask_batch = np.append(seg_mask_batch, np.expand_dims(seg_mask_seq, axis=0), axis=0)
 
-                    # Wait to increase disparity between images
-                    time.sleep(TIME_DELAY)
+                    # TODO: Retrieve camera mat from Isaac instead of manually input
+                    intrinsics = np.array([[208., 0., 208.], [0., 113.778, 64.], [0., 0., 1.]])  # Scaled properly
+                    intrinsics_batch = np.repeat(intrinsics[None, :],
+                                                 repeats=self.batch_size if not self.optimize else self.repetitions,
+                                                 axis=0)  # Create batch
 
-                    # TODO: Turn seg mask generator into an Isaac node
-                    # TODO: Fix MRCNN to work within another tf.Graph()
-                    # Create wide image and segmentation triplets
-                    if (i + 1) % self.seq_length == 0:
-                        image_seq, seg_mask_seq = img_processor.process_image([images[i - 2],
-                                                                               images[i - 1],
-                                                                               images[i]])
+                    if not self.optimize:
+                        # Shuffle batch elements to reduce overfitting
+                        np.random.seed(2)
+                        np.random.shuffle(image_batch)
+                        np.random.shuffle(seg_mask_batch)
+                        np.random.shuffle(intrinsics_batch)
 
-                        if self.optimize:
-                            repetitions = self.repetitions
-                        else:
-                            repetitions = 1
-                        for j in range(repetitions):
-                            # Add to total image lists; add repetitions if performing online refinement
-                            image_batch = np.append(image_batch, np.expand_dims(image_seq, axis=0), axis=0)
-                            seg_mask_batch = np.append(seg_mask_batch, np.expand_dims(seg_mask_seq, axis=0), axis=0)
-
-                # TODO: Retrieve camera mat from Isaac instead of manually input
-                intrinsics = np.array([[208., 0., 208.], [0., 113.778, 64.], [0., 0., 1.]])  # Scaled properly
-                intrinsics_batch = np.repeat(intrinsics[None, :],
-                                             repeats=self.batch_size if not self.optimize else self.repetitions,
-                                             axis=0)  # Create batch
-
-                if not self.optimize:
-                    # Shuffle batch elements to reduce overfitting
-                    np.random.seed(2)
-                    np.random.shuffle(image_batch)
-                    np.random.shuffle(seg_mask_batch)
-                    np.random.shuffle(intrinsics_batch)
-
-                # Yield batches
-                yield {COLOR_IMAGE: np.array(image_batch),
-                       SEG_MASK: np.array(seg_mask_batch),
-                       INTRINSICS: intrinsics_batch}
+                    # Yield batches
+                    yield {COLOR_IMAGE: np.array(image_batch),
+                           SEG_MASK: np.array(seg_mask_batch),
+                           INTRINSICS: intrinsics_batch}
 
         return lambda: _generator(self)
 

@@ -11,30 +11,34 @@ import cv2
 from isaac_app import create_isaac_app, start_isaac_app
 from struct2depth.process_image import ImageProcessor
 import time
+import csv
 
 # Root directory of the Isaac
 ROOT_DIR = os.path.abspath("/mnt/isaac_2019_2")
 sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 import packages.ml
+from differential_base_state import DifferentialBaseState
 
 # Op names.
 COLOR_IMAGE_NAME = 'rgb_image'
 LABEL_IMAGE_NAME = 'sgementation_label'
 INPUT_NAME = 'input'
 OUTPUT_NAME = 'output'
+SEQ_LENGTH = 3
 STEPSIZE = 1
 WIDTH = 416
 HEIGHT = 128
+TIME_DELAY = 0.4  # seconds
 
 OUTPUT_DIR = 'synth_images'
 
-# Number of samples to acquire in batch
-kSampleNumbers = 1
+# Number of samples Isaac Sim should accumulate
+buffer_size = 1
+sample_num = 1
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-
 
 # Create the application.
 isaac_app = create_isaac_app()
@@ -48,37 +52,45 @@ start_isaac_app(isaac_app)
 
 img_processor = ImageProcessor()
 
-count = 0
+gct = 0
 while True:
+    # Retrieve rgb images from isaac sim
     while True:
-        num = bridge.get_sample_number()
-        if num >= kSampleNumbers:
+        if bridge.get_sample_count() >= buffer_size:
             break
-        time.sleep(1.0)
-        print("waiting for samples: {}".format(num))
+        time.sleep(TIME_DELAY)
+        print("waiting for samples: {}".format(bridge.get_sample_count()))
 
-    images = bridge.acquire_samples(kSampleNumbers)
-    print("{} Samples acquired".format(kSampleNumbers))
+    # Retrieve differential base speed from file
+    with open('/mnt/isaac_2019_2/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
+        csv_reader = csv.reader(speed_file, delimiter=',')
+        for row in csv_reader:
+            speed = float(row[0])
+            angular_speed = float(row[1])
 
-    while np.shape(images)[0] < 3:
-        time.sleep(.25)
-        images = np.concatenate((images, bridge.acquire_samples(kSampleNumbers)))
+    # Only save image if the robot is moving or rotating above a threshold speed
+    # Images below these thresholds do not have a great enough disparity for the network to learn depth.
+    if speed > 0.25 or angular_speed > 0.25:
+        images = bridge.acquire_samples(sample_num)
 
-    for i in range(kSampleNumbers):
-        # Create segmentation mask
-        img = cv2.resize(images[i][0], (WIDTH, HEIGHT))
-        # seg_img = img_processor.create_mask(img)
-        seg_img = np.zeros(shape=(HEIGHT, WIDTH, 3))
+        # Create wide image and segmentation triplets
+        intrinsics = "208, 0, 208, 0, 113.778, 64, 0, 0, 1"
+        for i in range(sample_num):
 
-        # Convert to uint8
-        img = img.astype(np.uint8)
+            img = cv2.resize(images[i][0], (WIDTH, HEIGHT))
 
-        # Save to directory
-        cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/synth_images_single/{}.png'.format(count), img)
-        # cv2.imwrite('/mnt/isaac/apps/carter_sim_struct2depth/synth_images/{}-fseg.png'.format(count), seg_img)
-        print('saved images')
+            # Create segmentation mask
+            # seg_img = img_processor.create_mask(img)
+            seg_img = np.zeros(shape=(HEIGHT, WIDTH, 3))
 
-        count += 1
+            # Save to directory
+            cv2.imwrite('/mnt/sim_images/test/{}.png'.format(gct), np.uint8(img))
+            cv2.imwrite('/mnt/sim_seg_masks/test/{}-fseg.png'.format(gct), seg_img)
+            f = open('/mnt/sim_intrinsics/test/{}.csv'.format(gct), 'w')
+            f.write(intrinsics)
+            f.close()
 
+            print('Saved images: {}'.format(gct))
+            gct += 1
 
-
+    time.sleep(TIME_DELAY)

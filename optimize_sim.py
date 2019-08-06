@@ -55,7 +55,7 @@ SAVE_EVERY = 1  # Defines the interval that predictions should be saved at.
 SAVE_PREVIEWS = True  # If set, while save image previews of depth predictions.
 FIXED_SEED = 8964  # Fixed seed for repeatability.
 
-flags.DEFINE_string('output_dir', '/mnt/isaac/apps/carter_sim_struct2depth/results/results_sim_ft_20', 'Directory to store predictions. '
+flags.DEFINE_string('output_dir', '/mnt/isaac_2019_2/apps/carter_sim_struct2depth/results/test', 'Directory to store predictions. '
                                                          'Assumes that regular inference has been executed before '
                                                          'and results were stored in this folder.')
 flags.DEFINE_string('data_dir', None, 'Folder pointing to preprocessed '
@@ -187,8 +187,6 @@ def main(_):
     # Create Isaac application.
     isaac_app = create_isaac_app()
 
-    # Start the application and Sight server
-    start_isaac_app(isaac_app)
     logging.info("Isaac application loaded")
 
     # Run fine-tuning process and save predictions in id-folders.
@@ -252,20 +250,8 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app):
         # TODO: Caching the weights would be better to avoid I/O bottleneck.
 
         # Start the application and Sight server
-        isaac_app.start_webserver()
-        isaac_app.start()
+        start_isaac_app(isaac_app)
         logging.info("Isaac application loaded")
-
-        node = isaac_app.find_node_by_name("CarterTrainingSamples")
-        bridge = packages.ml.SampleAccumulator(node)
-
-        # Wait until we get enough samples from Isaac
-        while True:
-            num = bridge.get_sample_number()
-            if num >= 1:
-                break
-            time.sleep(1.0)
-            logging.info("waiting for enough samples: {}".format(num))
 
         logging.info('Running fine-tuning:')
         step = 1
