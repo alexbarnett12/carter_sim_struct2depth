@@ -31,6 +31,7 @@ from absl import logging
 import numpy as np
 import tensorflow as tf
 
+from isaac_app import create_isaac_app, start_isaac_app
 from struct2depth import model
 from struct2depth import nets
 from struct2depth import reader
@@ -40,7 +41,6 @@ from struct2depth import util
 ROOT_DIR = os.path.abspath("/mnt/isaac_2019_2/")  # Root directory of the Isaac
 sys.path.append(ROOT_DIR)
 from engine.pyalice import *
-from pinhole_to_tensor import PinholeToTensor
 from differential_base_state import DifferentialBaseState
 
 gfile = tf.gfile
@@ -191,10 +191,11 @@ def main(_):
         gfile.MakeDirs(FLAGS.checkpoint_dir)
 
     # Create Isaac application.
-    isaac_app = Application(app_filename="/mnt/isaac_2019_2/apps/carter_sim_struct2depth/carter_sim.app.json")
+    isaac_app = create_isaac_app()
+    # isaac_app = Application(app_filename="/mnt/isaac_2019_2/apps/carter_sim_struct2depth/carter_sim.app.json")
 
     # Register custom Isaac codelets
-    isaac_app.register({"differential_base_state": DifferentialBaseState})
+    # isaac_app.register({"differential_base_state": DifferentialBaseState})
 
     train_model = model.Model(data_dir=FLAGS.data_dir,
                               file_extension=FLAGS.file_extension,
@@ -264,7 +265,7 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
         logging.info('Training...')
 
         # Start the application and Sight server
-        isaac_app.start()
+        start_isaac_app(isaac_app)
         logging.info("Isaac application loaded")
 
         start_time = time.time()
