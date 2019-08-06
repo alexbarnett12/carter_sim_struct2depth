@@ -34,7 +34,6 @@ py_binary(
     name = "train",
     srcs = [
         "differential_base_state.py",
-        "pinhole_to_tensor.py",
         "train.py",
     ],
     data = [
@@ -91,6 +90,7 @@ py_binary(
     name = "live_inference",
     srcs = [
         "live_inference.py",
+        "differential_base_state.py",
         "monocular_depth_map.py",
     ],
     data = [
@@ -118,20 +118,15 @@ py_binary(
     name = "optimize_sim",
     srcs = [
         "differential_base_state.py",
-        "pinhole_to_tensor.py",
         "optimize_sim.py",
     ],
     data = [
-        "pinhole_to_tensor.config.json",
-        "pinhole_to_tensor.graph.json",
-        ":base_control.graph.json",
+        ":carter_sim.app.json",
         ":carter.config.json",
         ":carter.graph.json",
         ":navigation.config.json",
         ":navigation.graph.json",
-        "//apps:py_init",
         "//apps/assets/maps",
-        "//messages:core_messages",
         "//packages/flatsim:libflatsim_module.so",
         "//packages/map:libmap_module.so",
         "//packages/ml:libml_module.so",

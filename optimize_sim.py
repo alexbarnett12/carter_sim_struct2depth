@@ -37,31 +37,18 @@ from absl import logging
 import numpy as np
 import tensorflow as tf
 
+from isaac_app import create_isaac_app, start_isaac_app
 from struct2depth import model
 from struct2depth import nets
 from struct2depth import reader
 from struct2depth import util
 
 # Isaac SDK imports
-ROOT_DIR = os.path.abspath("/mnt/isaac/")  # Root directory of the Isaac
+ROOT_DIR = os.path.abspath("/mnt/isaac_2019_2/")  # Root directory of the Isaac
 sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 import packages.ml
 from differential_base_state import DifferentialBaseState
-
-# Map strings
-WAREHOUSE = 'carter_warehouse_p'
-HOSPITAL = 'hospital'
-
-# Isaac Sim flags
-flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter.graph.json",
-                    'Where the isaac SDK app graph is stored')
-flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter.config.json",
-                    'Where the isaac SDK app node configuration is stored')
-flags.DEFINE_string('map_config_filename', "apps/assets/maps/" + HOSPITAL + ".config.json",
-                    "Config file for Isaac Sim map")
-flags.DEFINE_string('map_graph_filename', "apps/assets/maps/" + HOSPITAL + ".graph.json",
-                    "Graph file for Isaac Sim map")
 
 gfile = tf.gfile
 SAVE_EVERY = 1  # Defines the interval that predictions should be saved at.
@@ -198,31 +185,10 @@ def main(_):
         FLAGS.output_dir = FLAGS.output_dir[:-1]
 
     # Create Isaac application.
-    isaac_app = Application(name="carter_sim", modules=["map",
-                                                        "navigation",
-                                                        "perception",
-                                                        "planner",
-                                                        "viewers",
-                                                        "flatsim",
-                                                        "//packages/ml:ml"])
-
-    # Load config files
-    isaac_app.load_config(FLAGS.config_filename)
-    isaac_app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
-    isaac_app.load_config(FLAGS.map_config_filename)
-
-    # Load graph files
-    isaac_app.load_graph(FLAGS.graph_filename)
-    isaac_app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
-    isaac_app.load_graph(FLAGS.map_graph_filename)
-    isaac_app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
-
-    # Register custom Isaac codelets
-    isaac_app.register({"differential_base_state": DifferentialBaseState})
+    isaac_app = create_isaac_app()
 
     # Start the application and Sight server
-    isaac_app.start_webserver()
-    isaac_app.start()
+    start_isaac_app(isaac_app)
     logging.info("Isaac application loaded")
 
     # Run fine-tuning process and save predictions in id-folders.
