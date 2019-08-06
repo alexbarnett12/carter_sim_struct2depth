@@ -8,17 +8,15 @@ import tensorflow as tf
 import numpy as np
 import cv2
 
+from isaac_app import create_isaac_app, start_isaac_app
 from struct2depth.process_image import ImageProcessor
 import time
 
 # Root directory of the Isaac
-ROOT_DIR = os.path.abspath("/mnt/isaac")
+ROOT_DIR = os.path.abspath("/mnt/isaac_2019_2")
 sys.path.append(ROOT_DIR)
-
 from engine.pyalice import *
 import packages.ml
-from pinhole_to_tensor import PinholeToTensor
-import capnp
 
 # Op names.
 COLOR_IMAGE_NAME = 'rgb_image'
@@ -36,33 +34,17 @@ kSampleNumbers = 1
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter_save.graph.json",
-                    'Where the isaac SDK app graph is stored')
-flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter_save.config.json",
-                    'Where the isaac SDK app node configuration is stored')
+
 
 # Create the application.
-app = Application(name="carter_sim", modules=["map",
-                                              "navigation",
-                                              "perception",
-                                              "planner",
-                                              "viewers",
-                                              "flatsim",
-                                              "//packages/ml:ml"])
-
-app.load_config(FLAGS.config_filename)
-app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
-app.load_config("apps/assets/maps/carter_warehouse_p.config.json")
-app.load_graph(FLAGS.graph_filename)
-app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
-app.load_graph("apps/assets/maps/carter_warehouse_p.graph.json")
-app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
+isaac_app = create_isaac_app()
 
 # Startup the bridge to get data.
-node = app.find_node_by_name("CarterTrainingSamples")
+node = isaac_app.find_node_by_name("CarterTrainingSamples")
 bridge = packages.ml.SampleAccumulator(node)
-app.start_webserver()
-app.start()
+
+# Start the app
+start_isaac_app(isaac_app)
 
 img_processor = ImageProcessor()
 

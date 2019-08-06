@@ -8,16 +8,14 @@ import tensorflow as tf
 import numpy as np
 import cv2
 
+from isaac_app import create_isaac_app, start_isaac_app
 from struct2depth.process_image import ImageProcessor
 import time
 import csv
-from absl import logging
-import datetime
 
 # Root directory of the Isaac
-ROOT_DIR = os.path.abspath("/mnt/isaac")
+ROOT_DIR = os.path.abspath("/mnt/isaac_2019_2")
 sys.path.append(ROOT_DIR)
-
 from engine.pyalice import *
 import packages.ml
 from differential_base_state import DifferentialBaseState
@@ -41,36 +39,16 @@ sample_num = 1
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter_save.graph.json",
-                    'Where the isaac SDK app graph is stored')
-flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter_save.config.json",
-                    'Where the isaac SDK app node configuration is stored')
 
 # Create the application.
-app = Application(name="carter_sim", modules=["map",
-                                              "navigation",
-                                              "perception",
-                                              "planner",
-                                              "viewers",
-                                              "flatsim",
-                                              "//packages/ml:ml"])
-
-app.load_config(FLAGS.config_filename)
-app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
-app.load_config("apps/assets/maps/carter_warehouse_p.config.json")
-app.load_graph(FLAGS.graph_filename)
-app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
-app.load_graph("apps/assets/maps/carter_warehouse_p.graph.json")
-app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
-
-# Register custom PyCodelet
-app.register({"differential_base_state": DifferentialBaseState})
+isaac_app = create_isaac_app()
 
 # Startup the bridge to get data.
-node = app.find_node_by_name("CarterTrainingSamples")
+node = isaac_app.find_node_by_name("CarterTrainingSamples")
 bridge = packages.ml.SampleAccumulator(node)
-app.start_webserver()
-app.start()
+
+# Start the app
+start_isaac_app(isaac_app)
 
 img_processor = ImageProcessor()
 
@@ -86,7 +64,7 @@ while True:
         print("waiting for samples: {}".format(num))
 
     # Retrieve differential base speed from file
-    with open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
+    with open('/mnt/isaac_2019_2/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
         csv_reader = csv.reader(speed_file, delimiter=',')
         for row in csv_reader:
             speed = float(row[0])
