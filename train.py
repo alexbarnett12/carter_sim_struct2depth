@@ -32,18 +32,11 @@ from absl import logging
 import numpy as np
 import tensorflow as tf
 
+from isaac_app import create_isaac_app, start_isaac_app
 from struct2depth import model
 from struct2depth import nets
 from struct2depth import reader
 from struct2depth import util
-
-# Isaac SDK imports
-ROOT_DIR = os.path.abspath("/mnt/isaac/")  # Root directory of the Isaac
-sys.path.append(ROOT_DIR)
-from engine.pyalice import *
-from pinhole_to_tensor import PinholeToTensor
-from differential_base_state import DifferentialBaseState
-import packages.ml
 
 gfile = tf.gfile
 CONFIG_PATH = "/mnt/isaac/apps/carter_sim_struct2depth/configs/train_parameters.json"
@@ -112,16 +105,16 @@ def verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_
                       imagenet_ckpt,imagenet_norm, architecture, exhaustive_mode, icp_weight, checkpoint_dir):
     if handle_motion and joint_encoder:
         raise ValueError('Using a joint encoder is currently not supported when '
-                         'modeling object motion.')
+                     'modeling object motion.')
     if handle_motion and seq_length != 3:
         raise ValueError('The current motion model implementation only supports '
                          'using a sequence length of three.')
     if handle_motion and not compute_minimum_loss:
         raise ValueError('Computing the minimum photometric loss is required when '
                          'enabling object motion handling.')
-    # if FLAGS.size_constraint_weight > 0 and not FLAGS.handle_motion:
-    #   raise ValueError('To enforce object size constraints, enable motion '
-    #                    'handling.')
+        # if FLAGS.size_constraint_weight > 0 and not FLAGS.handle_motion:
+        #   raise ValueError('To enforce object size constraints, enable motion '
+        #                    'handling.')
     if imagenet_ckpt and not imagenet_norm:
         logging.warn('When initializing with an ImageNet-pretrained model, it is '
                      'recommended to normalize the image inputs accordingly using '
@@ -147,7 +140,6 @@ def verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_
 
     if not gfile.Exists(checkpoint_dir):
         gfile.MakeDirs(checkpoint_dir)
-
 
 def main(_):
     # Fixed seed for repeatability
@@ -201,27 +193,7 @@ def main(_):
                       imagenet_ckpt, imagenet_norm, architecture, exhaustive_mode, icp_weight, checkpoint_dir)
 
     # Create Isaac application.
-    isaac_app = Application(name="carter_sim", modules=["map",
-                                                        "navigation",
-                                                        "perception",
-                                                        "planner",
-                                                        "viewers",
-                                                        "flatsim",
-                                                        "//packages/ml:ml"])
-
-    # Load config files
-    isaac_app.load_config(FLAGS.config_filename)
-    isaac_app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
-    isaac_app.load_config(FLAGS.map_config_filename)
-
-    # Load graph files
-    isaac_app.load_graph(FLAGS.graph_filename)
-    isaac_app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
-    isaac_app.load_graph(FLAGS.map_graph_filename)
-    isaac_app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
-
-    # Register custom Isaac codelets
-    isaac_app.register({"differential_base_state": DifferentialBaseState})
+    isaac_app = create_isaac_app()
 
     # Set the GPU to run
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -295,20 +267,8 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
         logging.info('Training...')
 
         # Start the application and Sight server
-        isaac_app.start_webserver()
-        isaac_app.start()
+        start_isaac_app(isaac_app)
         logging.info("Isaac application loaded")
-
-        node = isaac_app.find_node_by_name("CarterTrainingSamples")
-        bridge = packages.ml.SampleAccumulator(node)
-
-        # Wait until we get enough samples from Isaac
-        while True:
-            num = bridge.get_sample_number()
-            if num >= 1:
-                break
-            time.sleep(1.0)
-            logging.info("waiting for enough samples: {}".format(num))
 
         start_time = time.time()
         last_summary_time = time.time()

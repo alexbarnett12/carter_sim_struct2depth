@@ -133,32 +133,24 @@
       "parent_actor": "carter_1"
     }
   },
-  "LidarPublisher": {
-    "isaac.alice.TcpPublisher": {
+  "TimeSyncedTcpConnections": {
+    "LidarPublisher": {
       "port": 5000,
       "host": "localhost"
-    }
-  },
-  "ActorPublisher": {
-    "isaac.alice.TcpPublisher": {
+    },
+    "ActorPublisher": {
       "port": 5001,
       "host": "localhost"
-    }
-  },
-  "ActuatorSubscriber": {
-    "isaac.alice.TcpSubscriber": {
+    },
+    "ActuatorSubscriber": {
       "port": 5002,
       "host": "localhost"
-    }
-  },
-  "LeftCameraPublisher": {
-    "isaac.alice.TcpPublisher": {
+    },
+    "LeftCameraPublisher": {
       "port": 5003,
       "host": "localhost"
-    }
-  },
-  "RightCameraPublisher": {
-    "isaac.alice.TcpPublisher": {
+    },
+    "RightCameraPublisher": {
       "port": 5004,
       "host": "localhost"
     }

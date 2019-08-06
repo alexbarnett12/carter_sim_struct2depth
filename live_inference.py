@@ -15,17 +15,6 @@
 
 """Runs struct2depth at inference. Produces depth estimates, ego-motion and object motion."""
 
-# Example usage:
-#
-# python inference.py \
-#    --input_dir ~/struct2depth/kitti-raw-uncompressed/ \
-#    --output_dir ~/struct2depth/output \
-#    --model_ckpt ~/struct2depth/model/model-199160
-#    --file_extension png \
-#    --depth \
-#    --egomotion true \
-
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -36,17 +25,20 @@ from absl import flags
 from absl import logging
 import time
 # import matplotlib.pyplot as plt
-from struct2depth import model
 import numpy as np
 import fnmatch
 import tensorflow as tf
+
+from isaac_app import create_isaac_app, start_isaac_app
+from struct2depth import model
 from struct2depth import nets
 from struct2depth import util
 
 # Isaac SDK
+ROOT_DIR = os.path.abspath("/mnt/isaac_2019_2/")  # Root directory of the Isaac
+sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 import packages.ml
-from pinhole_to_tensor import PinholeToTensor
 from monocular_depth_map import MonocularDepthMap
 
 gfile = tf.gfile
@@ -393,41 +385,6 @@ def _recursive_glob(treeroot, pattern):
         results.extend(os.path.join(base, f) for f in files)
     return results
 
-
-# Create Isaac application.
-def build_isaac_app():
-    isaac_app = Application(name="carter_sim_inference", modules=["map",
-                                                                  "navigation",
-                                                                  "perception",
-                                                                  "planner",
-                                                                  "viewers",
-                                                                  "flatsim",
-                                                                  "//packages/ml:ml"])
-
-    # Load config files
-    isaac_app.load_config("apps/carter_sim_struct2depth/carter.config.json")
-    isaac_app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
-    isaac_app.load_config("apps/assets/maps/carter_warehouse_p.config.json")
-
-    # Load graph files
-    isaac_app.load_graph("apps/carter_sim_struct2depth/carter_inference.graph.json")
-    isaac_app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
-    isaac_app.load_graph("apps/assets/maps/carter_warehouse_p.graph.json")
-    isaac_app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
-
-    # Register custom Isaac codelets
-    isaac_app.register({"monocular_depth_map": MonocularDepthMap})
-
-    return isaac_app
-
-
-def start_isaac_app(isaac_app):
-    # Start the application and Sight server
-    isaac_app.start_webserver()
-    isaac_app.start()
-    logging.info("Isaac application started")
-
-
 def main(_):
     # if (flags.input_dir is None) == (flags.input_list_file is None):
     #  raise ValueError('Exactly one of either input_dir or input_list_file has '
@@ -440,7 +397,7 @@ def main(_):
     #  raise ValueError('For sequence lengths other than three, single inference '
     #                   'mode has to be used.')
 
-    isaac_app = build_isaac_app()
+    isaac_app = create_isaac_app()
     start_isaac_app(isaac_app)
 
     # Run indefinitely

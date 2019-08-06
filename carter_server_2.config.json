@@ -1,4 +1,15 @@
 {
+  "LeftColorCameraEncoder": {
+	"isaac.ml.ColorCameraEncoderCuda": {
+	    "rows": 128,
+	    "cols": 416
+	}
+  },
+    "CarterTrainingSamples": {
+      "isaac.ml.SampleAccumulator": {
+        "sample_buffer_size": 1
+      }
+    },
   "shared_robot_model": {
     "DifferentialBaseModel": {
       "robot_radius": 0.5,
@@ -84,20 +95,20 @@
       "pose": [1.0, 0.0, 0.0, 0.0, -0.06, 0.0, 0.62]
     },
     "isaac.alice.TcpSubscriber": {
-      "port": 5000,
-      "host": "localhost"
+      "port": 5010,
+      "host": "10.0.5.24"
     }
   },
   "RigidBodySubscriber": {
     "isaac.alice.TcpSubscriber": {
-      "port": 5001,
-      "host": "localhost"
+      "port": 5011,
+      "host": "10.0.5.24"
     }
   },
   "ActuatorPublisher": {
     "isaac.alice.TcpPublisher": {
-      "port": 5002,
-      "host": "localhost"
+      "port": 5012,
+      "host": "10.0.5.24"
     }
   },
   "LeftCameraSubscriber": {
@@ -107,22 +118,10 @@
       "pose": [0.5, -0.5, 0.5, -0.5, 0.11, 0.06, 0.55]
     },
     "isaac.alice.TcpSubscriber": {
-      "port": 5003,
-      "host": "localhost"
+      "port": 5013,
+      "host": "10.0.5.24"
     }
   },
-    
-    "LeftColorCameraEncoder": {
-	"isaac.ml.ColorCameraEncoder": {
-	    "rows": 128,
-	    "cols": 416
-	}
-  },
-    "CarterTrainingSamples": {
-	"isaac.ml.SampleAccumulator": {
-	    "sample_buffer_size": 1
-	}
-    },
   "RightCameraSubscriber": {
     "right_camera_initializer": {
       "lhs_frame": "robot",
@@ -130,18 +129,13 @@
       "pose": [0.5, -0.5, 0.5, -0.5, 0.11, -0.06, 0.55]
     },
     "isaac.alice.TcpSubscriber": {
-      "port": 5004,
-      "host": "localhost"
+      "port": 5014,
+      "host": "10.0.5.24"
     }
   },
   "recorder": {
     "isaac.alice.Recorder": {
       "base_directory": "/tmp/isaac",
-      "enabled": false
-    }
-  },
-  "map_bridge": {
-    "isaac.map.MapBridge": {
       "enabled": false
     }
   },
@@ -153,9 +147,8 @@
   },
   "websight": {
     "WebsightServer": {
-      "webroot": "packages/sight/webroot",
-      "assetroot": "../isaac_assets",
       "port": 3000,
+      "assetroot": "external/isaac_assets",
       "ui_config": {
         "windows": {
           "Carter Sim - Local View": {
@@ -174,7 +167,7 @@
                 "active": true
               },
               {
-                "name": "carter_sim/global_plan/isaac.planner.GlobalPlanner/path",
+                "name": "carter_sim/global_plan_smoother/smoother/smooth_plan.path",
                 "active": true
               },
               {
@@ -195,15 +188,11 @@
                 "active": true
               },
               {
-                "name": "carter_sim/global_plan/isaac.planner.GlobalPlanner/graph",
-                "active": true
-              },
-              {
                 "name": "carter_sim/global_plan/isaac.planner.GlobalPlanner/target",
                 "active": true
               },
               {
-                "name": "carter_sim/global_plan/isaac.planner.GlobalPlanner/path",
+                "name": "carter_sim/global_plan_smoother/smoother/smooth_plan.path",
                 "active": true
               },
               {

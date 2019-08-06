@@ -9,17 +9,18 @@
     "isaac.planner.DifferentialBaseLqrPlanner": {
       "max_speed": 0.65,
       "num_controls": 50,
-      "local_maps": ["local_map"],
+      "obstacle_names": ["local_map", "map/restricted_area"],
+      "robot_model": "shared_robot_model/SphericalRobotShapeComponent",
       "tick_period": "10Hz"
     }
   },
   "local_map": {
     "isaac.navigation.OccupancyToBinaryMap": {
       "mean_threshold": 32,
-      "stdandard_deviation_threshold": 0
+      "standard_deviation_threshold": 96
     },
     "isaac.navigation.BinaryToDistanceMap": {
-      "local_map_name": "local_map",
+      "obstacle_name": "local_map",
       "compute_distance_inside": true,
       "blur_factor": 3,
       "max_distance": 5.0
@@ -42,20 +43,25 @@
       "tick_period": "50ms"
     }
   },
+  "global_plan_smoother": {
+    "smoother": {
+      "robot_model": "shared_robot_model/SphericalRobotShapeComponent"
+    }
+  },
   "global_plan": {
     "isaac.navigation.OccupancyToBinaryMap": {
       "is_optimistic": true,
       "mean_threshold": 196,
-      "stdandard_deviation_threshold": 64
+      "standard_deviation_threshold": 64
     },
     "isaac.navigation.BinaryToDistanceMap": {
-      "local_map_name": "global_plan_local_map",
+      "obstacle_name": "global_plan_local_map",
       "compute_distance_inside": false,
       "blur_factor": 0,
       "max_distance": 2.0
     },
     "isaac.planner.GlobalPlanner": {
-      "local_map_name": "global_plan_local_map",
+      "dynamic_obstacle_names": ["global_plan_local_map"],
       "tick_period": "1Hz"
     }
   },
@@ -70,9 +76,20 @@
       "tick_period": "250ms"
     }
   },
+  "shared_robot_model": {
+    "SphericalRobotShapeComponent": {
+      "obstacle_world_component": "obstacle_world/obstacle_world",
+      "circles": [
+        { "center": [0.0 ,0.0], "radius": 0.4},
+        { "center": [0.2 ,0.2], "radius": 0.2},
+        { "center": [0.2 ,-0.2], "radius": 0.2}
+      ]
+    }
+  },
   "scan_localization": {
     "robot_viewer": {
-      "tick_period": "50Hz"
+      "tick_period": "50Hz",
+      "robot_model": "shared_robot_model/SphericalRobotShapeComponent"
     }
   },
   "segway_odometry": {
@@ -89,8 +106,6 @@
   },
   "random_walk": {
     "isaac.navigation.RandomWalk": {
-      "var_rx_has_arrived": "go_to/isaac.navigation.GoTo/has_arrived",
-      "var_rx_is_stationary": "go_to/isaac.navigation.GoTo/is_stationary",
       "timeout": 10.0,
       "robot_radius": 0.5,
       "tick_period": "250ms"
@@ -116,8 +131,6 @@
   },
   "patrol": {
     "isaac.navigation.Patrol": {
-      "var_rx_has_arrived": "go_to/isaac.navigation.GoTo/has_arrived",
-      "var_rx_is_stationary": "go_to/isaac.navigation.GoTo/is_stationary",
       "tick_period": "250ms"
     }
   },

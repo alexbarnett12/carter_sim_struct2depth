@@ -37,38 +37,18 @@ from absl import logging
 import numpy as np
 import tensorflow as tf
 
+from isaac_app import create_isaac_app, start_isaac_app
 from struct2depth import model
 from struct2depth import nets
 from struct2depth import reader
 from struct2depth import util
-
-# Isaac SDK imports
-ROOT_DIR = os.path.abspath("/mnt/isaac/")  # Root directory of the Isaac
-sys.path.append(ROOT_DIR)
-from engine.pyalice import *
-import packages.ml
-from differential_base_state import DifferentialBaseState
-
-# Map strings
-WAREHOUSE = 'carter_warehouse_p'
-HOSPITAL = 'hospital'
-
-# Isaac Sim flags
-flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter.graph.json",
-                    'Where the isaac SDK app graph is stored')
-flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter.config.json",
-                    'Where the isaac SDK app node configuration is stored')
-flags.DEFINE_string('map_config_filename', "apps/assets/maps/" + HOSPITAL + ".config.json",
-                    "Config file for Isaac Sim map")
-flags.DEFINE_string('map_graph_filename', "apps/assets/maps/" + HOSPITAL + ".graph.json",
-                    "Graph file for Isaac Sim map")
 
 gfile = tf.gfile
 SAVE_EVERY = 1  # Defines the interval that predictions should be saved at.
 SAVE_PREVIEWS = True  # If set, while save image previews of depth predictions.
 FIXED_SEED = 8964  # Fixed seed for repeatability.
 
-flags.DEFINE_string('output_dir', '/mnt/isaac/apps/carter_sim_struct2depth/results/results_sim_ft_20', 'Directory to store predictions. '
+flags.DEFINE_string('output_dir', '/mnt/isaac_2019_2/apps/carter_sim_struct2depth/results/test', 'Directory to store predictions. '
                                                          'Assumes that regular inference has been executed before '
                                                          'and results were stored in this folder.')
 flags.DEFINE_string('data_dir', None, 'Folder pointing to preprocessed '
@@ -198,31 +178,8 @@ def main(_):
         FLAGS.output_dir = FLAGS.output_dir[:-1]
 
     # Create Isaac application.
-    isaac_app = Application(name="carter_sim", modules=["map",
-                                                        "navigation",
-                                                        "perception",
-                                                        "planner",
-                                                        "viewers",
-                                                        "flatsim",
-                                                        "//packages/ml:ml"])
+    isaac_app = create_isaac_app()
 
-    # Load config files
-    isaac_app.load_config(FLAGS.config_filename)
-    isaac_app.load_config("apps/carter_sim_struct2depth/navigation.config.json")
-    isaac_app.load_config(FLAGS.map_config_filename)
-
-    # Load graph files
-    isaac_app.load_graph(FLAGS.graph_filename)
-    isaac_app.load_graph("apps/carter_sim_struct2depth/navigation.graph.json")
-    isaac_app.load_graph(FLAGS.map_graph_filename)
-    isaac_app.load_graph("apps/carter_sim_struct2depth/base_control.graph.json")
-
-    # Register custom Isaac codelets
-    isaac_app.register({"differential_base_state": DifferentialBaseState})
-
-    # Start the application and Sight server
-    isaac_app.start_webserver()
-    isaac_app.start()
     logging.info("Isaac application loaded")
 
     # Run fine-tuning process and save predictions in id-folders.
@@ -286,20 +243,8 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app):
         # TODO: Caching the weights would be better to avoid I/O bottleneck.
 
         # Start the application and Sight server
-        isaac_app.start_webserver()
-        isaac_app.start()
+        start_isaac_app(isaac_app)
         logging.info("Isaac application loaded")
-
-        node = isaac_app.find_node_by_name("CarterTrainingSamples")
-        bridge = packages.ml.SampleAccumulator(node)
-
-        # Wait until we get enough samples from Isaac
-        while True:
-            num = bridge.get_sample_number()
-            if num >= 1:
-                break
-            time.sleep(1.0)
-            logging.info("waiting for enough samples: {}".format(num))
 
         logging.info('Running fine-tuning:')
         step = 1

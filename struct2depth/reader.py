@@ -33,12 +33,6 @@ import time
 import util
 from process_image import ImageProcessor
 
-# Isaac SDK imports
-ROOT_DIR = os.path.abspath("/mnt/isaac/")  # Root directory of the Isaac
-sys.path.append(ROOT_DIR)
-from engine.pyalice import *
-import packages.ml
-
 # from pinhole_to_tensor import PinholeToTensor
 
 # Automatically parallelize tf.mapping function to maximize efficiency
@@ -96,31 +90,24 @@ class DataReader(object):
         self.input_file = input_file
         self.isaac_app = isaac_app
         self.steps_per_epoch = 1000
-        self.speed = 1000
-        self.angular_speed = 1000
+        self.speed = 0
+        self.angular_speed = 0
         self.optimize = optimize
         self.repetitions = repetitions
 
     # Retrieve current robot linear and angular speed from Isaac Sim
+    # NOT FUNCTIONAL: Isaac 2019.2 has incorrect documentation on its published messages
     def update_speed(self):
-        with open('/mnt/isaac/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
+        with open('/mnt/isaac_2019_2/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
             csv_reader = csv.reader(speed_file, delimiter=',')
             for row in csv_reader:
                 if len(row) == 2:
-                    try:
-                        float(row[0])
-                        self.speed = float(row[0])
-                    except ValueError:
-                        self.speed = 0
-                    try:
-                        float(row[1])
-                        self.angular_speed = float(row[1])
-                    except ValueError:
-                        self.angular_speed = 0
+                    self.speed = float(row[0])
+                    self.angular_speed = float(row[1])
 
     # Check if Isaac Sim bridge has samples
     def has_samples(self, bridge):
-        return bridge.get_sample_number() >= self.sample_numbers
+        return bridge.get_sample_count() >= self.sample_numbers
 
     # Create a training sample generator from Isaac Sim.
     # bridge is the SampleAccumulator node that feeds image data
@@ -134,20 +121,17 @@ class DataReader(object):
                 image_batch = np.zeros((0, self.img_height, self.img_width * self.seq_length, 3))
                 seg_mask_batch = np.zeros((0, self.img_height, self.img_width * self.seq_length, 3))
 
-                # Wait until we get enough samples from Isaac
-                while not self.has_samples(bridge):
-                    time.sleep(TIME_DELAY)
-                # Retrieve current robot linear and angular speed
+                images = []
+
                 self.update_speed()
 
-                # Only save image if the robot is moving or rotating above a threshold speed
-                # Images below these thresholds do not have a great enough disparity for the network to learn depth.
-                if self.speed > 0.1 or self.angular_speed > 0.15:
-                    images = []
+                # Only collect samples if robot is moving faster than a certain threshold
+                if self.speed > 0.25 or self.angular_speed > 0.25:
+
                     # Retrieve a total of (batch_size * seq_length) images
                     for i in range(self.batch_size * self.seq_length):
 
-                        # Wait for images to accumulate
+                        # Wait until we get enough samples from Isaac
                         while not self.has_samples(bridge):
                             time.sleep(TIME_DELAY)
 
@@ -163,7 +147,7 @@ class DataReader(object):
                         # TODO: Turn seg mask generator into an Isaac node
                         # TODO: Fix MRCNN to work within another tf.Graph()
                         # Create wide image and segmentation triplets
-                        if i != 0 and (i + 1) % self.seq_length == 0:
+                        if (i + 1) % self.seq_length == 0:
                             image_seq, seg_mask_seq = img_processor.process_image([images[i - 2],
                                                                                    images[i - 1],
                                                                                    images[i]])
