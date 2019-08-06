@@ -44,7 +44,10 @@ def load_training_parameters():
     with open(TRAINING_CONFIG_PATH) as f:
         config = json.load(f)
 
-    return config["data_dir"], \
+    return config["image_dir"], \
+           config["seg_mask_dir"], \
+           config["intrinsics_dir"], \
+           config["num_saved_images"], \
            config["using_saved_images"], \
            config["pretrained_ckpt"], \
            config["imagenet_ckpt"], \
@@ -141,7 +144,10 @@ def main(_):
     random.seed(seed)
 
     # Load training parameters
-    data_dir, \
+    image_dir, \
+    seg_mask_dir, \
+    intrinsics_dir, \
+    num_saved_images, \
     using_saved_images, \
     pretrained_ckpt, \
     imagenet_ckpt, \
@@ -191,13 +197,19 @@ def main(_):
                       imagenet_ckpt, imagenet_norm, architecture, exhaustive_mode, icp_weight, checkpoint_dir)
 
     # Create Isaac application.
-    isaac_app = create_isaac_app(isaac_app_filename)
+    isaac_app = None
+    if not using_saved_images:
+        isaac_app = create_isaac_app(isaac_app_filename)
 
     # Set which GPU to run
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = cuda_device
 
-    train_model = model.Model(data_dir=data_dir,
+    train_model = model.Model(image_dir=image_dir,
+                              seg_mask_dir=seg_mask_dir,
+                              intrinsics_dir=intrinsics_dir,
+                              num_saved_images=num_saved_images,
+                              using_saved_images=using_saved_images,
                               file_extension=file_extension,
                               is_training=True,
                               learning_rate=learning_rate,
@@ -231,12 +243,12 @@ def main(_):
                               speed_threshold=speed_threshold,
                               angular_speed_threshold=angular_speed_threshold)
 
-    train(train_model, pretrained_ckpt, imagenet_ckpt,
-          checkpoint_dir, train_steps, summary_freq, isaac_app, max_ckpts_to_keep, save_ckpt_every)
+    train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir, train_steps,
+          summary_freq, isaac_app, max_ckpts_to_keep, save_ckpt_every, using_saved_images)
 
 
-def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
-          train_steps, summary_freq, isaac_app, max_ckpts_to_keep, save_ckpt_every):
+def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir, train_steps,
+          summary_freq, isaac_app, max_ckpts_to_keep, save_ckpt_every, using_saved_images):
     """Train model."""
 
     vars_to_restore = None
@@ -269,8 +281,9 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir,
         logging.info('Training...')
 
         # Start the application and Sight server
-        start_isaac_app(isaac_app)
-        logging.info("Isaac application loaded")
+        if not using_saved_images:
+            start_isaac_app(isaac_app)
+            logging.info("Isaac application loaded")
 
         start_time = time.time()
         last_summary_time = time.time()

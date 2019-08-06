@@ -60,7 +60,6 @@ class DataReader(object):
     """Reads stored sequences which are produced by dataset/gen_data.py."""
 
     def __init__(self,
-                 data_dir,
                  batch_size,
                  img_height,
                  img_width,
@@ -72,7 +71,6 @@ class DataReader(object):
                  random_color,
                  imagenet_norm,
                  shuffle,
-                 input_file='train',
                  isaac_app=None,
                  time_delay=0.4,
                  num_isaac_samples=1,
@@ -80,7 +78,6 @@ class DataReader(object):
                  angular_speed_threshold=0.25,
                  optimize=False,
                  repetitions=0):
-        self.data_dir = data_dir
         self.batch_size = batch_size
         self.img_height = img_height
         self.img_width = img_width
@@ -93,7 +90,6 @@ class DataReader(object):
         self.random_color = random_color
         self.imagenet_norm = imagenet_norm
         self.shuffle = shuffle
-        self.input_file = input_file
         self.isaac_app = isaac_app
         self.time_delay = time_delay
         self.sample_numbers = num_isaac_samples

@@ -1,5 +1,8 @@
 {
-  "data_dir" : "/mnt/sim_data/sim_images/sim_images_40_delay_warehouse",
+  "image_dir" : "/mnt/sim_images/sim_images_40_delay_hospital",
+  "seg_mask_dir" : "/mnt/sim_seg_masks",
+  "intrinsics_dir" : "/mnt/sim_intrinsics",
+  "num_saved_images" : 134991,
   "using_saved_images" : false,
   "pretrained_ckpt" : "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt",
   "imagenet_ckpt" : "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt",

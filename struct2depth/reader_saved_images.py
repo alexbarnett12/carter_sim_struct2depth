@@ -34,18 +34,17 @@ import time
 gfile = tf.gfile
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-QUEUE_SIZE = 2000
-QUEUE_BUFFER = 3
 # See nets.encoder_resnet as reference for below input-normalizing constants.
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_SD = (0.229, 0.224, 0.225)
+
 FLIP_RANDOM = 'random'  # Always perform random flipping.
 FLIP_ALWAYS = 'always'  # Always flip image input, used for test augmentation.
 FLIP_NONE = 'none'  # Always disables flipping.
 
 '''Isaac SDK code'''
 # Root directory of the Isaac
-ROOT_DIR = os.path.abspath("/usr/local/lib/isaac")
+ROOT_DIR = os.path.abspath("/mnt/isaac_2019_2")
 sys.path.append(ROOT_DIR)
 
 # Op names.
@@ -55,17 +54,6 @@ CAMERA_MAT = 'camera_matrix'
 INTRINSICS = 'camera_matrix'
 INTRINSICS_INV = 'camera_matrix_inverse'
 IMAGE_NORM = 'imagenet_norm'
-SEQ_LENGTH = 3
-HEIGHT = 128
-WIDTH = 416
-TRIPLET_WIDTH = WIDTH * SEQ_LENGTH
-INPUT_NAME = 'input'
-OUTPUT_NAME = 'output'
-STEPSIZE = 1
-REPEAT = 100
-
-# Number of samples to acquire in batch
-kSampleNumbers = 1
 
 
 def load_and_preprocess_image(path):
@@ -88,10 +76,29 @@ def display_images(image_ds):
 class DataReader(object):
     """Reads stored sequences which are produced by dataset/gen_data.py."""
 
-    def __init__(self, data_dir, batch_size, img_height, img_width, seq_length,
-                 num_scales, file_extension, random_scale_crop, flipping_mode,
-                 random_color, imagenet_norm, shuffle, input_file='train', isaac_app=None):
-        self.data_dir = data_dir
+    def __init__(self,
+                 image_dir,
+                 seg_mask_dir,
+                 intrinsics_dir,
+                 num_saved_images,
+                 batch_size,
+                 img_height,
+                 img_width,
+                 seq_length,
+                 num_scales,
+                 file_extension,
+                 random_scale_crop,
+                 flipping_mode,
+                 random_color,
+                 imagenet_norm,
+                 shuffle,
+                 isaac_app=None,
+                 optimize=False,
+                 repetitions=0):
+        self.image_dir = image_dir
+        self.seg_mask_dir = seg_mask_dir
+        self.intrinsics_dir = intrinsics_dir
+        self.num_saved_images = num_saved_images
         self.batch_size = batch_size
         self.img_height = img_height
         self.img_width = img_width
@@ -103,19 +110,36 @@ class DataReader(object):
         self.random_color = random_color
         self.imagenet_norm = imagenet_norm
         self.shuffle = shuffle
-        self.input_file = input_file
         self.isaac_app = isaac_app
-        self.steps_per_epoch = 4
+        self.steps_per_epoch = int(self.num_saved_images/self.batch_size)
+        self.optimize = optimize
+        self.repetition = repetitions
 
 
     def read_data(self):
         """Provides images and camera intrinsics."""
         with tf.name_scope('data_loading'):
 
-            data_root = '/mnt/isaac/apps/carter_sim_struct2depth/sim_images/sim_images_25_delay'
-            data_root_seg = '/mnt/isaac/apps/carter_sim_struct2depth/sim_seg_masks'
-            data_root_intrinsics = '/mnt/isaac/apps/carter_sim_struct2depth/sim_intrinsics'
-            all_image_paths = list(glob.glob(data_root + '/*'))
+            # Check if data paths exist
+            if not gfile.Exists(self.image_dir):
+                raise ValueError("Not a valid image directory")
+            if not gfile.Exists(self.seg_mask_dir):
+                raise ValueError("Not a valid seg mask directory")
+            if not gfile.Exists(self.intrinsics_dir):
+                raise ValueError("Not a valid intrinsics directory")
+
+            if self.image_dir.endswith('/'):
+                self.image_dir = self.image_dir[:-1]
+            if self.seg_mask_dir.endswith('/'):
+                self.seg_mask_dir = self.seg_mask_dir[:-1]
+            if self.intrinsics_dir.endswith('/'):
+                self.intrinsics_dir = self.intrinsics_dir[:-1]
+
+            data_root_images = self.image_dir
+            data_root_seg = self.seg_mask_dir
+            data_root_intrinsics = self.intrinsics_dir
+
+            all_image_paths = list(glob.glob(data_root_images + '/*'))
             all_image_paths_seg = list(glob.glob(data_root_seg + '/*'))
             all_image_paths_intrinsics = list(glob.glob(data_root_intrinsics + '/*'))
 
@@ -133,12 +157,11 @@ class DataReader(object):
             intrinsics_ds = tf.data.experimental.CsvDataset(all_image_paths_intrinsics, record_defaults)  # Dataset of .csv lines
             intrinsics_ds = intrinsics_ds.map(lambda *x: tf.convert_to_tensor(x))  # Convert to tensors
             intrinsics_ds = intrinsics_ds.map(lambda x: tf.reshape(x, [3, 3]))
-            logging.info("Datasets loaded")
 
-            # print("Dataset: {}".format(isaac_dataset))
-            print("Image dataset: {}".format(image_ds))
-            print("Seg mask dataset: {}".format(seg_ds))
-            print("Intrinsics dataset: {}".format(intrinsics_ds))
+            logging.info("Datasets loaded")
+            logging.info("Image dataset dimensions: {}".format(image_ds))
+            logging.info("Seg mask dataset dimensions: {}".format(seg_ds))
+            logging.info("Intrinsics dataset dimensions: {}".format(intrinsics_ds))
 
         with tf.name_scope('preprocessing'):
 
@@ -201,11 +224,11 @@ class DataReader(object):
         # Shuffle and batch datasets
         with tf.name_scope('batching'):
             if self.shuffle:
-                image_stack_ds = image_stack_ds.shuffle(buffer_size=20, seed=2).batch(self.batch_size, drop_remainder=True).repeat(REPEAT)
-                image_stack_norm = image_stack_norm.shuffle(buffer_size=20, seed=2).batch(self.batch_size, drop_remainder=True).repeat(REPEAT)
-                seg_stack_ds = seg_stack_ds.shuffle(buffer_size=20, seed=2).batch(self.batch_size, drop_remainder=True).repeat(REPEAT)
-                intrinsics_ds = intrinsics_ds.shuffle(buffer_size=20, seed=2).batch(self.batch_size, drop_remainder=True).repeat(REPEAT)
-                intrinsics_inv = intrinsics_inv.shuffle(buffer_size=20, seed=2).batch(self.batch_size, drop_remainder=True).repeat(REPEAT)
+                image_stack_ds = image_stack_ds.shuffle(buffer_size=1500, seed=2).batch(self.batch_size, drop_remainder=True).repeat()
+                image_stack_norm = image_stack_norm.shuffle(buffer_size=1500, seed=2).batch(self.batch_size, drop_remainder=True).repeat()
+                seg_stack_ds = seg_stack_ds.shuffle(buffer_size=1500, seed=2).batch(self.batch_size, drop_remainder=True).repeat()
+                intrinsics_ds = intrinsics_ds.shuffle(buffer_size=1500, seed=2).batch(self.batch_size, drop_remainder=True).repeat()
+                intrinsics_inv = intrinsics_inv.shuffle(buffer_size=1500, seed=2).batch(self.batch_size, drop_remainder=True).repeat()
 
             else:
                 image_stack_ds = image_stack_ds.batch(self.batch_size)
@@ -222,12 +245,11 @@ class DataReader(object):
         intrinsics_inv_it = intrinsics_inv.make_one_shot_iterator().get_next()
 
         logging.info("Dataset successfuly processed")
-        logging.info("Final dimensional check")
-        print(image_it)
-        print(image_norm_it)
-        print(seg_it)
-        print(intrinsics_it)
-        print(intrinsics_inv_it)
+        logging.info("Final image dimensions: {}".format(image_it))
+        logging.info("Final image norm dimensions: {}".format(image_norm_it))
+        logging.info("Final seg mask dimensions: {}".format(seg_it))
+        logging.info("Final intrinsics dimensions: {}".format(intrinsics_it))
+        logging.info("Final intrinsics inverse dimensions: {}".format(intrinsics_inv_it))
 
         return (image_it,
                 image_norm_it,
@@ -306,9 +328,9 @@ class DataReader(object):
     def normalize_by_imagenet(self, image_stack):
         # Copy constant values multiple times to fill up a tensor of length SEQ_LENGTH * len(IMAGENET_MEAN)
         im_mean = tf.tile(
-            tf.constant(IMAGENET_MEAN), multiples=[SEQ_LENGTH])
+            tf.constant(IMAGENET_MEAN), multiples=[self.seq_length])
         im_sd = tf.tile(
-            tf.constant(IMAGENET_SD), multiples=[SEQ_LENGTH])
+            tf.constant(IMAGENET_SD), multiples=[self.seq_length])
         return (image_stack - im_mean) / im_sd
 
 # Class for flipping images, seg masks, and intrinsics

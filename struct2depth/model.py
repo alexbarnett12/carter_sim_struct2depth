@@ -30,7 +30,7 @@ sys.path.append(ROOT_DIR)
 import nets
 import project
 import reader
-# import reader_saved_images
+import reader_saved_images
 import util
 
 gfile = tf.gfile
@@ -43,7 +43,11 @@ class Model(object):
     """Model code based on SfMLearner."""
 
     def __init__(self,
-                 data_dir=None,
+                 image_dir=None,
+                 seg_mask_dir=None,
+                 intrinsics_dir=None,
+                 num_saved_images=0,
+                 using_saved_images=False,
                  file_extension='png',
                  is_training=True,
                  learning_rate=0.0002,
@@ -82,7 +86,11 @@ class Model(object):
                  angular_speed_threshold=0.25,
                  optimize=False,
                  num_steps=0):
-        self.data_dir = data_dir
+        self.image_dir = image_dir
+        self.seg_mask_dir = seg_mask_dir
+        self.intrinsics_dir = intrinsics_dir
+        self.num_saved_images = num_saved_images
+        self.using_saved_images = using_saved_images
         self.file_extension = file_extension
         self.is_training = is_training
         self.learning_rate = learning_rate
@@ -122,7 +130,11 @@ class Model(object):
         self.optimize = optimize
         self.repetitions = num_steps
 
-        logging.info('data_dir: %s', data_dir)
+        logging.info('image_dir: %s', image_dir)
+        logging.info('seg_mask_dir: %s', seg_mask_dir)
+        logging.info('intrinsics_dir: %s', intrinsics_dir)
+        logging.info('num_saved_images: %s', num_saved_images)
+        logging.info('using_saved_images: %s', using_saved_images)
         logging.info('file_extension: %s', file_extension)
         logging.info('is_training: %s', is_training)
         logging.info('learning_rate: %s', learning_rate)
@@ -163,23 +175,44 @@ class Model(object):
                 constraint=lambda x: tf.clip_by_value(x, 0, np.infty))
 
         if self.is_training:
-            self.reader = reader.DataReader(self.data_dir, self.batch_size,
-                                            self.img_height, self.img_width,
-                                            self.seq_length, NUM_SCALES,
-                                            self.file_extension,
-                                            self.random_scale_crop,
-                                            self.flipping_mode,
-                                            self.random_color,
-                                            self.imagenet_norm,
-                                            self.shuffle,
-                                            self.input_file,
-                                            self.isaac_app,
-                                            self.time_delay,
-                                            self.num_isaac_samples,
-                                            self.speed_threshold,
-                                            self.angular_speed_threshold,
-                                            self.optimize,
-                                            self.repetitions)
+            if self.using_saved_images:
+                self.reader = reader_saved_images.DataReader(self.image_dir,
+                                                             self.seg_mask_dir,
+                                                             self.intrinsics_dir,
+                                                             self.num_saved_images,
+                                                             self.batch_size,
+                                                             self.img_height,
+                                                             self.img_width,
+                                                             self.seq_length,
+                                                             NUM_SCALES,
+                                                             self.file_extension,
+                                                             self.random_scale_crop,
+                                                             self.flipping_mode,
+                                                             self.random_color,
+                                                             self.imagenet_norm,
+                                                             self.shuffle,
+                                                             self.isaac_app,
+                                                             self.optimize,
+                                                             self.repetitions)
+            else:
+                self.reader = reader.DataReader(self.batch_size,
+                                                self.img_height,
+                                                self.img_width,
+                                                self.seq_length,
+                                                NUM_SCALES,
+                                                self.file_extension,
+                                                self.random_scale_crop,
+                                                self.flipping_mode,
+                                                self.random_color,
+                                                self.imagenet_norm,
+                                                self.shuffle,
+                                                self.isaac_app,
+                                                self.time_delay,
+                                                self.num_isaac_samples,
+                                                self.speed_threshold,
+                                                self.angular_speed_threshold,
+                                                self.optimize,
+                                                self.repetitions)
             self.build_train_graph()
         else:
             self.build_depth_test_graph()
@@ -801,7 +834,7 @@ class Model(object):
             tf.summary.scalar('ego_mean_{}'.format(i + 1), ego_mean)
             tf.summary.histogram('ego_histogram_{}'.format(i + 1), ego_grad)
             tf.summary.histogram('ego_hist_weights_{}'.format(i + 1), ego_grad)
-            
+
     def build_depth_test_graph(self):
         """Builds depth model reading from placeholders."""
         with tf.variable_scope('depth_prediction'):
