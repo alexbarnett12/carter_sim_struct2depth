@@ -8,10 +8,8 @@ from engine.pyalice import *
 import packages.ml
 from differential_base_state import DifferentialBaseState
 
-APP_FILENAME = "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/carter_sim.app.json"
-
-def create_isaac_app():
-    isaac_app = Application(app_filename=APP_FILENAME)
+def create_isaac_app(filename):
+    isaac_app = Application(app_filename=filename)
 
     isaac_app.register({"differential_base_state": DifferentialBaseState})
 

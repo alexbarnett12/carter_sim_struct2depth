@@ -59,15 +59,29 @@ FLIP_NONE = 'none'  # Always disables flipping.
 class DataReader(object):
     """Reads stored sequences which are produced by dataset/gen_data.py."""
 
-    def __init__(self, data_dir, batch_size, img_height, img_width, seq_length,
-                 num_scales, file_extension, random_scale_crop, flipping_mode,
-                 random_color, imagenet_norm, shuffle, input_file='train', isaac_app=None, time_delay=0.4,
+    def __init__(self,
+                 data_dir,
+                 batch_size,
+                 img_height,
+                 img_width,
+                 seq_length,
+                 num_scales,
+                 file_extension,
+                 random_scale_crop,
+                 flipping_mode,
+                 random_color,
+                 imagenet_norm,
+                 shuffle,
+                 input_file='train',
+                 isaac_app=None,
+                 time_delay=0.4,
                  num_isaac_samples=1,
+                 speed_threshold=0.25,
+                 angular_speed_threshold=0.25,
                  optimize=False,
                  repetitions=0):
         self.data_dir = data_dir
         self.batch_size = batch_size
-        self.sample_numbers = num_isaac_samples
         self.img_height = img_height
         self.img_width = img_width
         self.seq_length = seq_length
@@ -82,14 +96,16 @@ class DataReader(object):
         self.input_file = input_file
         self.isaac_app = isaac_app
         self.time_delay = time_delay
-        self.steps_per_epoch = 1000
+        self.sample_numbers = num_isaac_samples
         self.speed = 0
+        self.speed_threshold = speed_threshold
         self.angular_speed = 0
+        self.angular_speed_threshold = angular_speed_threshold
+        self.steps_per_epoch = 1000
         self.optimize = optimize
         self.repetitions = repetitions
 
     # Retrieve current robot linear and angular speed from Isaac Sim
-    # NOT FUNCTIONAL: Isaac 2019.2 has incorrect documentation on its published messages
     def update_speed(self):
         with open('/mnt/isaac_2019_2/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
             csv_reader = csv.reader(speed_file, delimiter=',')
@@ -119,7 +135,7 @@ class DataReader(object):
                 self.update_speed()
 
                 # Only collect samples if robot is moving faster than a certain threshold
-                if self.speed > 0.25 or self.angular_speed > 0.25:
+                if self.speed > self.speed_threshold or self.angular_speed > self.angular_speed_threshold:
 
                     # Retrieve a total of (batch_size * seq_length) images
                     for i in range(self.batch_size * self.seq_length):

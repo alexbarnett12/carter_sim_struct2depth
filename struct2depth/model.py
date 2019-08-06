@@ -78,6 +78,8 @@ class Model(object):
                  isaac_app=None,
                  time_delay=0.4,
                  num_isaac_samples=1,
+                 speed_threshold=0.25,
+                 angular_speed_threshold=0.25,
                  optimize=False,
                  num_steps=0):
         self.data_dir = data_dir
@@ -115,6 +117,8 @@ class Model(object):
         self.isaac_app = isaac_app
         self.time_delay = time_delay
         self.num_isaac_samples = num_isaac_samples
+        self.speed_threshold = speed_threshold
+        self.angular_speed_threshold = angular_speed_threshold
         self.optimize = optimize
         self.repetitions = num_steps
 
@@ -172,6 +176,8 @@ class Model(object):
                                             self.isaac_app,
                                             self.time_delay,
                                             self.num_isaac_samples,
+                                            self.speed_threshold,
+                                            self.angular_speed_threshold,
                                             self.optimize,
                                             self.repetitions)
             self.build_train_graph()

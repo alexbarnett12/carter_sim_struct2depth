@@ -1,0 +1,7 @@
+{
+  "isaac_app_filename" : "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/carter_sim.app.json",
+  "time_delay" : 0.4,
+  "num_isaac_samples" : 1,
+  "speed_threshold" : 0.25,
+  "angular_speed_threshold" : 0.25
+}

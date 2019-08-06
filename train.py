@@ -37,10 +37,11 @@ from struct2depth import nets
 from struct2depth import util
 
 gfile = tf.gfile
-CONFIG_PATH = "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/configs/train_parameters.json"
+TRAINING_CONFIG_PATH = "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/configs/train_parameters.json"
+ISAAC_CONFIG_PATH = "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/configs/isaac_parameters.json"
 
-def load_parameters():
-    with open(CONFIG_PATH) as f:
+def load_training_parameters():
+    with open(TRAINING_CONFIG_PATH) as f:
         config = json.load(f)
 
     return config["data_dir"], \
@@ -48,7 +49,6 @@ def load_parameters():
            config["pretrained_ckpt"], \
            config["imagenet_ckpt"], \
            config["checkpoint_dir"], \
-           config["isaac_app_filename"], \
            config["cuda_device"], \
            config["file_extension"], \
            config["batch_size"], \
@@ -80,16 +80,23 @@ def load_parameters():
            config["handle_motion"], \
            config["master"], \
            config["shuffle"], \
-           config["max_ckpts_to_keep"], \
-           config["time_delay"], \
-           config["num_isaac_samples"]
+           config["max_ckpts_to_keep"]
 
+def load_isaac_parameters():
+    with open(ISAAC_CONFIG_PATH) as f:
+        config = json.load(f)
+
+    return config["isaac_app_filename"], \
+           config["time_delay"], \
+           config["num_isaac_samples"], \
+           config["speed_threshold"], \
+           config["angular_speed_threshold"]
 
 def verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_loss, img_height, img_width,
-                      imagenet_ckpt,imagenet_norm, architecture, exhaustive_mode, icp_weight, checkpoint_dir):
+                      imagenet_ckpt, imagenet_norm, architecture, exhaustive_mode, icp_weight, checkpoint_dir):
     if handle_motion and joint_encoder:
         raise ValueError('Using a joint encoder is currently not supported when '
-                     'modeling object motion.')
+                         'modeling object motion.')
     if handle_motion and seq_length != 3:
         raise ValueError('The current motion model implementation only supports '
                          'using a sequence length of three.')
@@ -125,6 +132,7 @@ def verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_
     if not gfile.Exists(checkpoint_dir):
         gfile.MakeDirs(checkpoint_dir)
 
+
 def main(_):
     # Fixed seed for repeatability
     seed = 8964
@@ -138,7 +146,6 @@ def main(_):
     pretrained_ckpt, \
     imagenet_ckpt, \
     checkpoint_dir, \
-    isaac_app_filename, \
     cuda_device, \
     file_extension, \
     batch_size, \
@@ -169,17 +176,22 @@ def main(_):
     joint_encoder, \
     handle_motion, \
     master, \
-    shuffle,\
-    max_ckpts_to_keep, \
+    shuffle, \
+    max_ckpts_to_keep = load_training_parameters()
+
+    # Load isaac sim parameters
+    isaac_app_filename, \
     time_delay, \
-    num_isaac_samples = load_parameters()
+    num_isaac_samples, \
+    speed_threshold, \
+    angular_speed_threshold = load_isaac_parameters()
 
     # Ensure that parameters aren't breaking current model functionality
     verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_loss, img_height, img_width,
                       imagenet_ckpt, imagenet_norm, architecture, exhaustive_mode, icp_weight, checkpoint_dir)
 
     # Create Isaac application.
-    isaac_app = create_isaac_app()
+    isaac_app = create_isaac_app(isaac_app_filename)
 
     # Set which GPU to run
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -215,7 +227,9 @@ def main(_):
                               size_constraint_weight=size_constraint_weight,
                               isaac_app=isaac_app,
                               time_delay=time_delay,
-                              num_isaac_samples=num_isaac_samples)
+                              num_isaac_samples=num_isaac_samples,
+                              speed_threshold=speed_threshold,
+                              angular_speed_threshold=angular_speed_threshold)
 
     train(train_model, pretrained_ckpt, imagenet_ckpt,
           checkpoint_dir, train_steps, summary_freq, isaac_app, max_ckpts_to_keep, save_ckpt_every)

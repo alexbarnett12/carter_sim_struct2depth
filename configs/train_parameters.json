@@ -4,7 +4,6 @@
   "pretrained_ckpt" : "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt",
   "imagenet_ckpt" : "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt",
   "checkpoint_dir" :"/mnt/ckpts/sim/warehouse/40_delay_pretrained_8_6",
-  "isaac_app_filename" : "/mnt/isaac/apps/carter_sim_struct2depth/carter_sim.app.json",
   "cuda_device" : "0",
   "file_extension" : "png",
   "batch_size" : 4,
@@ -36,7 +35,5 @@
   "handle_motion" : false,
   "master" : "local",
   "shuffle" : true,
-  "max_ckpts_to_keep" : 1000000,
-  "time_delay" : 0.4,
-  "num_isaac_samples" : 1
+  "max_ckpts_to_keep" : 1000000
 }
