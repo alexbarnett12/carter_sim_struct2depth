@@ -58,6 +58,62 @@ py_binary(
 )
 
 py_binary(
+    name = "train_server",
+    main = "train.py",
+    srcs = [
+        "differential_base_state.py",
+        "train.py"
+    ],
+    data = [
+        ":carter_sim_server.app.json",
+        ":carter_server.config.json",
+        ":carter.graph.json",
+        ":navigation.config.json",
+        ":navigation.graph.json",
+        "//apps/assets/maps",
+        "//packages/map:libmap_module.so",
+        "//packages/flatsim:libflatsim_module.so",
+        "//packages/ml:libml_module.so",
+        "//packages/navigation:libnavigation_module.so",
+        "//packages/perception:libperception_module.so",
+        "//packages/planner:libplanner_module.so",
+        "//packages/viewers:libviewers_module.so",
+    ],
+    deps = [
+        "//engine/pyalice",
+        "//packages/ml:pyml",
+    ],
+)
+
+py_binary(
+    name = "train_server_2",
+    main = "train.py",
+    srcs = [
+        "differential_base_state.py",
+        "train.py"
+    ],
+    data = [
+        ":carter_sim_server_2.app.json",
+        ":carter_server_2.config.json",
+        ":carter.graph.json",
+        ":navigation.config.json",
+        ":navigation.graph.json",
+        "//apps/assets/maps",
+        "//packages/map:libmap_module.so",
+        "//packages/flatsim:libflatsim_module.so",
+        "//packages/ml:libml_module.so",
+        "//packages/navigation:libnavigation_module.so",
+        "//packages/perception:libperception_module.so",
+        "//packages/planner:libplanner_module.so",
+        "//packages/viewers:libviewers_module.so",
+    ],
+    deps = [
+        "//engine/pyalice",
+        "//packages/ml:pyml",
+    ],
+)
+
+py_binary(
     name = "live_inference",
     srcs = [
         "live_inference.py",
