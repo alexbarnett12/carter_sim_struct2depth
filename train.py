@@ -143,15 +143,11 @@ flags.DEFINE_string('master', 'local', 'Location of the session.')
 
 FLAGS = flags.FLAGS
 
-# flags.mark_flag_as_required('data_dir')
-# flags.mark_flag_as_required('checkpoint_dir')
-
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # GPU to run
 
 
 def main(_):
-    print("Current working directory: {}".format(os.getcwd()))
     # Fixed seed for repeatability
     seed = 8964
     tf.set_random_seed(seed)

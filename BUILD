@@ -61,6 +61,35 @@ py_binary(
 )
 
 py_binary(
+    name = "test_new_features",
+    srcs = [
+        "differential_base_state.py",
+        "test_new_features.py",
+    ],
+    data = [
+        ":carter_sim.app.json",
+        ":carter.config.json",
+        ":carter.graph.json",
+        ":navigation.config.json",
+        ":navigation.graph.json",
+        "//apps/assets/maps",
+        "//packages/map:libmap_module.so",
+        "//packages/flatsim:libflatsim_module.so",
+        "//packages/ml:libml_module.so",
+        "//packages/navigation:libnavigation_module.so",
+        "//packages/perception:libperception_module.so",
+        "//packages/planner:libplanner_module.so",
+        "//packages/viewers:libviewers_module.so",
+        "//apps:py_init",
+        "//messages:core_messages",
+    ],
+    deps = [
+        "//engine/pyalice",
+        "//packages/ml:pyml",
+    ],
+)
+
+py_binary(
     name = "live_inference",
     srcs = [
         "live_inference.py",

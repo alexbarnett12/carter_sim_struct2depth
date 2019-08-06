@@ -192,8 +192,8 @@
           "type": "isaac::alice::MessageLedger"
         },
         {
-          "name": "isaac.ml.ColorCameraEncoderCuda",
-          "type": "isaac::ml::ColorCameraEncoderCuda"
+          "name": "isaac.ml.ColorCameraEncoderCpu",
+          "type": "isaac::ml::ColorCameraEncoderCpu"
         }
       ]
     },
@@ -306,10 +306,10 @@
     },
     {
       "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/ColorSensor",
-      "target": "LeftColorCameraEncoder/isaac.ml.ColorCameraEncoderCuda/rgb_image"
+      "target": "LeftColorCameraEncoder/isaac.ml.ColorCameraEncoderCpu/rgb_image"
     },
     {
-      "source": "LeftColorCameraEncoder/isaac.ml.ColorCameraEncoderCuda/tensor",
+      "source": "LeftColorCameraEncoder/isaac.ml.ColorCameraEncoderCpu/tensor",
       "target": "CarterTrainingSamples/isaac.ml.SampleAccumulator/samples"
     },
     {

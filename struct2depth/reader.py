@@ -151,7 +151,6 @@ class DataReader(object):
 
                     # Acquire image
                     new_image = bridge.acquire_samples(self.sample_numbers)
-                    print(new_image[0][0])
 
                     # Add image to list
                     images.append(np.squeeze(new_image))
