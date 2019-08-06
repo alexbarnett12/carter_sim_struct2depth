@@ -1,13 +1,13 @@
 {
   "name": "carter_sim",
   "config_files": [
-    "apps/carter_sim_struct2depth/navigation.config.json",
-    "apps/carter_sim_struct2depth/carter.config.json",
+    "apps/carter_sim_struct2depth/configs/navigation.config.json",
+    "apps/carter_sim_struct2depth/configs/carter_server_2.config.json",
     "apps/assets/maps/carter_warehouse_p.config.json"
   ],
   "graph_files": [
-    "apps/carter_sim_struct2depth/navigation.graph.json",
-    "apps/carter_sim_struct2depth/carter.graph.json",
+    "apps/carter_sim_struct2depth/graphs/navigation.graph.json",
+    "apps/carter_sim_struct2depth/graphs/carter.graph.json",
     "apps/assets/maps/carter_warehouse_p.graph.json"
   ],
   "modules": [
@@ -18,7 +18,7 @@
       "viewers",
       "flatsim",
       "ml"
-  ], 
+  ],
   "config": {},
   "graph": {
     "nodes": [],
