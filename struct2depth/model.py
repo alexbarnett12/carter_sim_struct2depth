@@ -25,12 +25,6 @@ import tensorflow as tf
 import os
 import sys
 
-# from struct2depth import nets
-# from struct2depth import project
-# from struct2depth import reader
-# from struct2depth import reader_saved_images
-# from struct2depth import util
-
 ROOT_DIR = os.path.abspath("/mnt/isaac_2019_2/apps/carter_sim_struct2depth/struct2depth")
 sys.path.append(ROOT_DIR)
 import nets
@@ -82,6 +76,8 @@ class Model(object):
                  size_constraint_weight=0.0,
                  train_global_scale_var=True,
                  isaac_app=None,
+                 time_delay=0.4,
+                 num_isaac_samples=1,
                  optimize=False,
                  num_steps=0):
         self.data_dir = data_dir
@@ -117,6 +113,8 @@ class Model(object):
         self.size_constraint_weight = size_constraint_weight
         self.train_global_scale_var = train_global_scale_var
         self.isaac_app = isaac_app
+        self.time_delay = time_delay
+        self.num_isaac_samples = num_isaac_samples
         self.optimize = optimize
         self.repetitions = num_steps
 
@@ -172,6 +170,8 @@ class Model(object):
                                             self.shuffle,
                                             self.input_file,
                                             self.isaac_app,
+                                            self.time_delay,
+                                            self.num_isaac_samples,
                                             self.optimize,
                                             self.repetitions)
             self.build_train_graph()

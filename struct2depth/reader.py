@@ -31,9 +31,8 @@ import time
 
 # Struct2depth imports
 import util
+from isaac_app import create_sample_bridge
 from process_image import ImageProcessor
-
-# from pinhole_to_tensor import PinholeToTensor
 
 # Automatically parallelize tf.mapping function to maximize efficiency
 AUTOTUNE = tf.data.experimental.AUTOTUNE
@@ -50,21 +49,11 @@ CAMERA_MAT = 'camera_matrix'
 INTRINSICS = 'camera_matrix'
 INTRINSICS_INV = 'camera_matrix_inverse'
 IMAGE_NORM = 'imagenet_norm'
-INPUT_NAME = 'input'
-OUTPUT_NAME = 'output'
 
 # Variables to set
-SEQ_LENGTH = 3  # Number of images in stack. Currently only works with 3
-HEIGHT = 128  # Image height
-WIDTH = 416  # Image width
-TRIPLET_WIDTH = WIDTH * SEQ_LENGTH  # Width of wide image created to pair images in time
-TIME_DELAY = 0.4  # Seconds
 FLIP_RANDOM = 'random'  # Always perform random flipping of input images.
 FLIP_ALWAYS = 'always'  # Always flip image input, used for test augmentation.
 FLIP_NONE = 'none'  # Always disables flipping.
-
-# Number of samples to acquire at a time from Isaac Sim. Most likely want to keep this at 1.
-kSampleNumbers = 1
 
 
 class DataReader(object):
@@ -72,14 +61,17 @@ class DataReader(object):
 
     def __init__(self, data_dir, batch_size, img_height, img_width, seq_length,
                  num_scales, file_extension, random_scale_crop, flipping_mode,
-                 random_color, imagenet_norm, shuffle, input_file='train', isaac_app=None, optimize=False,
+                 random_color, imagenet_norm, shuffle, input_file='train', isaac_app=None, time_delay=0.4,
+                 num_isaac_samples=1,
+                 optimize=False,
                  repetitions=0):
         self.data_dir = data_dir
         self.batch_size = batch_size
-        self.sample_numbers = kSampleNumbers
+        self.sample_numbers = num_isaac_samples
         self.img_height = img_height
         self.img_width = img_width
         self.seq_length = seq_length
+        self.seq_width = self.img_width * self.seq_length
         self.num_scales = num_scales
         self.file_extension = file_extension
         self.random_scale_crop = random_scale_crop
@@ -89,6 +81,7 @@ class DataReader(object):
         self.shuffle = shuffle
         self.input_file = input_file
         self.isaac_app = isaac_app
+        self.time_delay = time_delay
         self.steps_per_epoch = 1000
         self.speed = 0
         self.angular_speed = 0
@@ -133,7 +126,7 @@ class DataReader(object):
 
                         # Wait until we get enough samples from Isaac
                         while not self.has_samples(bridge):
-                            time.sleep(TIME_DELAY)
+                            time.sleep(self.time_delay)
 
                         # Acquire image
                         new_image = bridge.acquire_samples(self.sample_numbers)
@@ -142,7 +135,7 @@ class DataReader(object):
                         images.append(np.squeeze(new_image))
 
                         # Wait to increase disparity between images
-                        time.sleep(TIME_DELAY)
+                        time.sleep(self.time_delay)
 
                         # TODO: Turn seg mask generator into an Isaac node
                         # TODO: Fix MRCNN to work within another tf.Graph()
@@ -201,8 +194,8 @@ class DataReader(object):
                 SEG_MASK: tf.uint8,
                 INTRINSICS: tf.float32,
             }, {
-                COLOR_IMAGE: (dataset_size, HEIGHT, TRIPLET_WIDTH, 3),
-                SEG_MASK: (dataset_size, HEIGHT, TRIPLET_WIDTH, 3),
+                COLOR_IMAGE: (dataset_size, self.img_height, self.seq_width, 3),
+                SEG_MASK: (dataset_size, self.img_height, self.seq_width, 3),
                 INTRINSICS: (dataset_size, 3, 3),
             })
 
@@ -213,8 +206,7 @@ class DataReader(object):
         with tf.name_scope('data_loading'):
 
             # Startup the sample accumulator bridge to get Isaac Sim data
-            node = self.isaac_app.find_node_by_name("CarterTrainingSamples")
-            bridge = packages.ml.SampleAccumulator(node)
+            bridge = create_sample_bridge(self.isaac_app)
 
             # Create image processor for generating triplets and seg masks
             img_processor = ImageProcessor()
@@ -388,9 +380,9 @@ class DataReader(object):
     def normalize_by_imagenet(self, image_stack):
         # Copy constant values multiple times to fill up a tensor of length SEQ_LENGTH * len(IMAGENET_MEAN)
         im_mean = tf.tile(
-            tf.constant(IMAGENET_MEAN), multiples=[SEQ_LENGTH])
+            tf.constant(IMAGENET_MEAN), multiples=[self.seq_length])
         im_sd = tf.tile(
-            tf.constant(IMAGENET_SD), multiples=[SEQ_LENGTH])
+            tf.constant(IMAGENET_SD), multiples=[self.seq_length])
         return (image_stack - im_mean) / im_sd
 
 

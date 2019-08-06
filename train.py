@@ -23,7 +23,6 @@ import math
 import os
 import random
 import time
-import sys
 import json
 
 from absl import app
@@ -35,27 +34,10 @@ import tensorflow as tf
 from isaac_app import create_isaac_app, start_isaac_app
 from struct2depth import model
 from struct2depth import nets
-from struct2depth import reader
 from struct2depth import util
 
 gfile = tf.gfile
-CONFIG_PATH = "/mnt/isaac/apps/carter_sim_struct2depth/configs/train_parameters.json"
-
-# Map strings
-WAREHOUSE = 'carter_warehouse_p'
-HOSPITAL = 'hospital'
-
-# Isaac Sim flags
-flags.DEFINE_string('graph_filename', "apps/carter_sim_struct2depth/carter.graph.json",
-                    'Where the isaac SDK app graph is stored')
-flags.DEFINE_string('config_filename', "apps/carter_sim_struct2depth/carter.config.json",
-                    'Where the isaac SDK app node configuration is stored')
-flags.DEFINE_string('map_config_filename', "apps/assets/maps/" + WAREHOUSE + ".config.json",
-                    "Config file for Isaac Sim map")
-flags.DEFINE_string('map_graph_filename', "apps/assets/maps/" + WAREHOUSE + ".graph.json",
-                    "Graph file for Isaac Sim map")
-
-FLAGS = flags.FLAGS
+CONFIG_PATH = "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/configs/train_parameters.json"
 
 def load_parameters():
     with open(CONFIG_PATH) as f:
@@ -98,7 +80,9 @@ def load_parameters():
            config["handle_motion"], \
            config["master"], \
            config["shuffle"], \
-           config["max_ckpts_to_keep"]
+           config["max_ckpts_to_keep"], \
+           config["time_delay"], \
+           config["num_isaac_samples"]
 
 
 def verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_loss, img_height, img_width,
@@ -186,7 +170,9 @@ def main(_):
     handle_motion, \
     master, \
     shuffle,\
-    max_ckpts_to_keep = load_parameters()
+    max_ckpts_to_keep, \
+    time_delay, \
+    num_isaac_samples = load_parameters()
 
     # Ensure that parameters aren't breaking current model functionality
     verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_loss, img_height, img_width,
@@ -195,7 +181,7 @@ def main(_):
     # Create Isaac application.
     isaac_app = create_isaac_app()
 
-    # Set the GPU to run
+    # Set which GPU to run
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = cuda_device
 
@@ -227,7 +213,9 @@ def main(_):
                               handle_motion=handle_motion,
                               equal_weighting=equal_weighting,
                               size_constraint_weight=size_constraint_weight,
-                              isaac_app=isaac_app)
+                              isaac_app=isaac_app,
+                              time_delay=time_delay,
+                              num_isaac_samples=num_isaac_samples)
 
     train(train_model, pretrained_ckpt, imagenet_ckpt,
           checkpoint_dir, train_steps, summary_freq, isaac_app, max_ckpts_to_keep, save_ckpt_every)
