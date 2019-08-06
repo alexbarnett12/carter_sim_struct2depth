@@ -51,8 +51,6 @@ py_binary(
         "//packages/perception:libperception_module.so",
         "//packages/planner:libplanner_module.so",
         "//packages/viewers:libviewers_module.so",
-        "//apps:py_init",
-        "//messages:core_messages",
     ],
     deps = [
         "//engine/pyalice",
