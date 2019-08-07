@@ -26,7 +26,6 @@ import csv
 # from .gen_masks_kitti import MaskGenerator
 # from .alignment import align
 
-
 def crop(img, segimg, fx, fy, cx, cy):
     # Perform center cropping, preserving 50% vertically.
     middle_perc = 0.50
@@ -80,6 +79,8 @@ def main():
     OUTPUT_SEG_MASK_DIR = '/mnt/test_data/processed_seg_masks'
     OUTPUT_INTRINSICS_DIR = '/mnt/test_data/processed_intrinsics'
     CALIB_FILE = 'kinect_camera_intrinsics.csv'
+    OPTIMIZE = True
+    REPETITIONS = 5
 
     # Create a segmentation mask generator
     # mask_generator = MaskGenerator()
@@ -144,12 +145,22 @@ def main():
         #     big_seg_img[:, k * WIDTH:(k + 1) * WIDTH] = seg_list[k]
 
         # Write triplet, seg_mask triplet, and camera intrinsics to files
-        cv2.imwrite(OUTPUT_IMAGE_DIR + '/' + str(ct) + '.png', big_img)
-        cv2.imwrite(OUTPUT_SEG_MASK_DIR + '/' + str(ct) + '-fseg.png', big_seg_img)
-        f = open(OUTPUT_INTRINSICS_DIR + '/' + str(ct) + '_cam.txt', 'w')
-        f.write(calib_representation)
-        f.close()
-        ct += 1
+        # Write multiple times if planning on testing online refinement
+        if OPTIMIZE:
+            for k in range(REPETITIONS):
+                cv2.imwrite(OUTPUT_IMAGE_DIR + '/' + str(ct) + '.png', big_img)
+                cv2.imwrite(OUTPUT_SEG_MASK_DIR + '/' + str(ct) + '-fseg.png', big_seg_img)
+                f = open(OUTPUT_INTRINSICS_DIR + '/' + str(ct) + '_cam.txt', 'w')
+                f.write(calib_representation)
+                f.close()
+                ct += 1
+        else:
+            cv2.imwrite(OUTPUT_IMAGE_DIR + '/' + str(ct) + '.png', big_img)
+            cv2.imwrite(OUTPUT_SEG_MASK_DIR + '/' + str(ct) + '-fseg.png', big_seg_img)
+            f = open(OUTPUT_INTRINSICS_DIR + '/' + str(ct) + '_cam.txt', 'w')
+            f.write(calib_representation)
+            f.close()
+            ct += 1
 
 if __name__ == "__main__":
     main()

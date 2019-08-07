@@ -139,9 +139,9 @@ class DataReader(object):
             data_root_seg = self.seg_mask_dir
             data_root_intrinsics = self.intrinsics_dir
 
-            all_image_paths = list(glob.glob(data_root_images + '/*'))
-            all_image_paths_seg = list(glob.glob(data_root_seg + '/*'))
-            all_image_paths_intrinsics = list(glob.glob(data_root_intrinsics + '/*'))
+            all_image_paths = list(sorted(glob.glob(data_root_images + '/*')))
+            all_image_paths_seg = list(sorted(glob.glob(data_root_seg + '/*')))
+            all_image_paths_intrinsics = list(sorted(glob.glob(data_root_intrinsics + '/*')))
 
             # Raw image triplets
             path_ds = tf.data.Dataset.from_tensor_slices(all_image_paths)

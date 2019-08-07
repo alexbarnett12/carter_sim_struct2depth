@@ -44,11 +44,11 @@ from struct2depth import reader
 from struct2depth import util
 
 gfile = tf.gfile
-SAVE_EVERY = 1  # Defines the interval that predictions should be saved at.
+SAVE_EVERY = 5  # Defines the interval that predictions should be saved at.
 SAVE_PREVIEWS = True  # If set, while save image previews of depth predictions.
 FIXED_SEED = 8964  # Fixed seed for repeatability.
 
-flags.DEFINE_string('output_dir', '/mnt/isaac_2019_2/apps/carter_sim_struct2depth/results/new_test', 'Directory to store predictions. '
+flags.DEFINE_string('output_dir', '/mnt/isaac_2019_2/apps/carter_sim_struct2depth/results/saved_images/warehouse/40_delay_pretrained_lr_0002_8_7_ft_nr_20', 'Directory to store predictions. '
                                                          'Assumes that regular inference has been executed before '
                                                          'and results were stored in this folder.')
 flags.DEFINE_string('image_dir', '/mnt/test_data/processed_images', 'Folder pointing to preprocessed '
@@ -60,7 +60,7 @@ flags.DEFINE_string('intrinsics_dir', '/mnt/test_data/processed_intrinsics', 'Fo
 flags.DEFINE_boolean('using_saved_images', True, 'Folder pointing to preprocessed '
                                       'triplets to fine-tune on.')
 flags.DEFINE_string('model_ckpt',
-                    '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt',
+                    '/mnt/isaac_2019_2/apps/carter_sim_struct2depth/struct2depth/ckpts_best/saved_images/warehouse/40_delay_pretrained_lr_0002_10000_images_8_1/model-2422000',
                     'Model checkpoint to optimize.')
 flags.DEFINE_string('ft_name', '', 'Optional prefix for temporary files.')
 flags.DEFINE_string('file_extension', 'png', 'Image data file extension.')
@@ -113,7 +113,7 @@ flags.DEFINE_bool('joint_encoder', False, 'Whether to share parameters '
 flags.DEFINE_float('egomotion_threshold', 0.01, 'Minimum egomotion magnitude '
                                                 'to apply finetuning. If lower, just forwards the ordinary '
                                                 'prediction.')
-flags.DEFINE_integer('num_steps', 5, 'Number of optimization steps to run.')
+flags.DEFINE_integer('num_steps', 20, 'Number of optimization steps to run.')
 flags.DEFINE_boolean('handle_motion', True, 'Whether the checkpoint was '
                                             'trained with motion handling.')
 flags.DEFINE_bool('flip', False, 'Whether images should be flipped as well as '
@@ -232,7 +232,6 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app):
                              summary_op=None)
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    img_nr = 0
     failed_heuristic = []
     with sv.managed_session(config=config) as sess:
         # TODO: Caching the weights would be better to avoid I/O bottleneck.
@@ -241,18 +240,19 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app):
         if not FLAGS.using_saved_images:
             start_isaac_app(isaac_app)
             logging.info("Isaac application loaded")
+        if model_ckpt is not None:
+            logging.info('Restored weights from %s', ckpt_path)
+            pretrain_restorer.restore(sess, ckpt_path)
+        if not gfile.Exists(output_dir):
+            gfile.MakeDirs(output_dir)
 
         logging.info('Running fine-tuning:')
+        img_nr = 0
         step = 1
         while True:
-            if model_ckpt is not None:
-                logging.info('Restored weights from %s', ckpt_path)
-                pretrain_restorer.restore(sess, ckpt_path)
-            if not gfile.Exists(output_dir):
-                gfile.MakeDirs(output_dir)
 
             # Run fine-tuning.
-            logging.info('Training:')
+            logging.info('Running step %s of %s.', step, int(FLAGS.num_steps / FLAGS.batch_size))
             fetches = {
                 'train': train_model.train_op,
                 'global_step': train_model.global_step,
@@ -268,9 +268,10 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app):
                 input_img_prev = input_img[0, :, :, 0:3]
                 input_img_center = input_img[0, :, :, 3:6]
                 input_img_next = input_img[0, :, :, 6:]
-                img_pred_file = os.path.join(
-                    output_dir,
-                    str(step).zfill(10) + ('_flip' if FLAGS.flip else '') + '.npy')
+                img_pred_dir = os.path.join(output_dir, str(img_nr))
+                img_pred_file = os.path.join(img_pred_dir, str(step).zfill(10) + ('_flip' if FLAGS.flip else '') + '.npy')
+                if not os.path.exists(img_pred_dir):
+                    os.mkdir(img_pred_dir)
                 motion = np.squeeze(train_model.egomotion.eval(session=sess))
                 # motion of shape (seq_length - 1, 6).
                 motion = np.mean(motion, axis=0)  # Average egomotion across frames.
@@ -297,9 +298,11 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app):
             # heuristic = ego_magnitude >= FLAGS.egomotion_threshold
             # if not heuristic and step == FLAGS.num_steps:
             #   failed_heuristic.append(img_nr)
+            if step == FLAGS.num_steps:
+                step = 0
+                img_nr += 1
 
-                step += 1
-            img_nr += 1
+            step += 1
 
 
 if __name__ == '__main__':
