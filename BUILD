@@ -142,10 +142,10 @@ py_binary(
 )
 
 py_binary(
-    name = "optimize_sim",
+    name = "optimize",
     srcs = [
         "differential_base_state.py",
-        "optimize_sim.py",
+        "optimize.py",
     ],
     data = [
         "apps/carter_sim.app.json",
@@ -205,6 +205,34 @@ py_binary(
     data = [
         "apps/carter_sim_server.app.json",
         "configs/carter_server.config.json",
+        "graphs/carter.graph.json",
+        "configs/navigation.config.json",
+        "graphs/navigation.graph.json",
+        "//apps/assets/maps",
+        "//packages/flatsim:libflatsim_module.so",
+        "//packages/map:libmap_module.so",
+        "//packages/ml:libml_module.so",
+        "//packages/navigation:libnavigation_module.so",
+        "//packages/perception:libperception_module.so",
+        "//packages/planner:libplanner_module.so",
+        "//packages/viewers:libviewers_module.so",
+    ],
+    deps = [
+        "//engine/pyalice",
+        "//packages/ml:pyml",
+    ],
+)
+
+py_binary(
+    name = "save_image_triplets_server_2",
+    main = "save_image_triplets.py",
+    srcs = [
+        "differential_base_state.py",
+        "save_image_triplets.py",
+    ],
+    data = [
+        "apps/carter_sim_server_2.app.json",
+        "configs/carter_server_2.config.json",
         "graphs/carter.graph.json",
         "configs/navigation.config.json",
         "graphs/navigation.graph.json",

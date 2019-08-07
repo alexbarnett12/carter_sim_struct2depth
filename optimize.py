@@ -48,26 +48,17 @@ SAVE_EVERY = 1  # Defines the interval that predictions should be saved at.
 SAVE_PREVIEWS = True  # If set, while save image previews of depth predictions.
 FIXED_SEED = 8964  # Fixed seed for repeatability.
 
-flags.DEFINE_string('output_dir', '/mnt/isaac_2019_2/apps/carter_sim_struct2depth/results/test', 'Directory to store predictions. '
+flags.DEFINE_string('output_dir', '/mnt/isaac_2019_2/apps/carter_sim_struct2depth/results/new_test', 'Directory to store predictions. '
                                                          'Assumes that regular inference has been executed before '
                                                          'and results were stored in this folder.')
-flags.DEFINE_string('data_dir', None, 'Folder pointing to preprocessed '
+flags.DEFINE_string('image_dir', '/mnt/test_data/processed_images', 'Folder pointing to preprocessed '
                                       'triplets to fine-tune on.')
-flags.DEFINE_string('triplet_list_file', None, 'Text file containing paths to '
-                                               'image files to process. Paths should be relative with '
-                                               'respect to the list file location. Every line should be '
-                                               'of the form [input_folder_name] [input_frame_num] '
-                                               '[output_path], where [output_path] is optional to specify '
-                                               'a different path to store the prediction.')
-flags.DEFINE_string('triplet_list_file_remains', None, 'Optional text file '
-                                                       'containing relative paths to image files which should not '
-                                                       'be fine-tuned, e.g. because of missing adjacent frames. '
-                                                       'For all files listed, the static prediction will be '
-                                                       'copied instead. File can be empty. If not, every line '
-                                                       'should be of the form [input_folder_name] '
-                                                       '[input_frame_num] [output_path], where [output_path] is '
-                                                       'optional to specify a different path to take and store '
-                                                       'the unrefined prediction from/to.')
+flags.DEFINE_string('seg_mask_dir', '/mnt/test_data/processed_seg_masks', 'Folder pointing to preprocessed '
+                                      'triplets to fine-tune on.')
+flags.DEFINE_string('intrinsics_dir', '/mnt/test_data/processed_intrinsics', 'Folder pointing to preprocessed '
+                                      'triplets to fine-tune on.')
+flags.DEFINE_boolean('using_saved_images', True, 'Folder pointing to preprocessed '
+                                      'triplets to fine-tune on.')
 flags.DEFINE_string('model_ckpt',
                     '/mnt/isaac/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt',
                     'Model checkpoint to optimize.')
@@ -178,16 +169,20 @@ def main(_):
         FLAGS.output_dir = FLAGS.output_dir[:-1]
 
     # Create Isaac application.
-    isaac_app = create_isaac_app()
-
-    logging.info("Isaac application loaded")
+    isaac_app = None
+    if not FLAGS.using_saved_images:
+        isaac_app = create_isaac_app()
+        logging.info("Isaac application loaded")
 
     # Run fine-tuning process and save predictions in id-folders.
     tf.set_random_seed(FIXED_SEED)
     np.random.seed(FIXED_SEED)
     random.seed(FIXED_SEED)
     flipping_mode = reader.FLIP_ALWAYS if FLAGS.flip else reader.FLIP_NONE
-    train_model = model.Model(data_dir=FLAGS.data_dir,
+    train_model = model.Model(image_dir=FLAGS.image_dir,
+                              seg_mask_dir=FLAGS.seg_mask_dir,
+                              intrinsics_dir=FLAGS.intrinsics_dir,
+                              using_saved_images=FLAGS.using_saved_images,
                               file_extension=FLAGS.file_extension,
                               is_training=True,
                               learning_rate=FLAGS.learning_rate,
@@ -243,8 +238,9 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app):
         # TODO: Caching the weights would be better to avoid I/O bottleneck.
 
         # Start the application and Sight server
-        start_isaac_app(isaac_app)
-        logging.info("Isaac application loaded")
+        if not FLAGS.using_saved_images:
+            start_isaac_app(isaac_app)
+            logging.info("Isaac application loaded")
 
         logging.info('Running fine-tuning:')
         step = 1

@@ -3,12 +3,12 @@
   "config_files": [
     "apps/carter_sim_struct2depth/configs/navigation.config.json",
     "apps/carter_sim_struct2depth/configs/carter_server_2.config.json",
-    "apps/assets/maps/carter_warehouse_p.config.json"
+    "apps/assets/maps/hospital.config.json"
   ],
   "graph_files": [
     "apps/carter_sim_struct2depth/graphs/navigation.graph.json",
     "apps/carter_sim_struct2depth/graphs/carter.graph.json",
-    "apps/assets/maps/carter_warehouse_p.graph.json"
+    "apps/assets/maps/hospital.graph.json"
   ],
   "modules": [
       "map",
