@@ -127,6 +127,7 @@ class DataReader(object):
                 seg_mask_batch = np.zeros((0, self.img_height, self.img_width * self.seq_length, 3))
 
                 images = []
+                seg_masks = []
 
                 self.update_speed()
 
@@ -141,21 +142,23 @@ class DataReader(object):
                             time.sleep(self.time_delay)
 
                         # Acquire image
-                        new_image = bridge.acquire_samples(self.sample_numbers)
+                        sample = bridge.acquire_samples(self.sample_numbers)
 
                         # Add image to list
-                        images.append(np.squeeze(new_image))
+                        images.append(sample[0][0])
+                        seg_masks.append(sample[0][1])
 
                         # Wait to increase disparity between images
                         time.sleep(self.time_delay)
 
-                        # TODO: Turn seg mask generator into an Isaac node
-                        # TODO: Fix MRCNN to work within another tf.Graph()
                         # Create wide image and segmentation triplets
                         if (i + 1) % self.seq_length == 0:
                             image_seq, seg_mask_seq = img_processor.process_image([images[i - 2],
                                                                                    images[i - 1],
-                                                                                   images[i]])
+                                                                                   images[i]],
+                                                                                   [seg_masks[i - 2],
+                                                                                   seg_masks[i],
+                                                                                   seg_masks[i]])
 
                             if self.optimize:
                                 repetitions = self.repetitions
@@ -203,7 +206,7 @@ class DataReader(object):
         dataset = tf.data.Dataset.from_generator(
             self.get_generator(bridge, img_processor), {
                 COLOR_IMAGE: tf.float32,
-                SEG_MASK: tf.uint8,
+                SEG_MASK: tf.float32,
                 INTRINSICS: tf.float32,
             }, {
                 COLOR_IMAGE: (dataset_size, self.img_height, self.seq_width, 3),
@@ -241,6 +244,9 @@ class DataReader(object):
 
             # Scale image values from 0-255 to 0-1
             image_ds = image_ds.map(lambda x: x / 255.0, num_parallel_calls=AUTOTUNE)
+
+            # Scale seg masks from 0-1 to 0-255
+            seg_ds = seg_ds.map(lambda x: tf.cast(x * 255, dtype=tf.uint8), num_parallel_calls=AUTOTUNE)
 
             # Randomly augment colorspace
             if self.random_color:

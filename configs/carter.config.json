@@ -1,9 +1,16 @@
 {
   "LeftColorCameraEncoder": {
-	"isaac.ml.ColorCameraEncoderCuda": {
+	"isaac.ml.ColorCameraEncoderCpu": {
 	    "rows": 128,
 	    "cols": 416
 	}
+  },
+  "LeftSegmentationEncoder": {
+    "isaac.ml.SegmentationEncoder": {
+      "rows": 128,
+      "cols": 416,
+      "target_object_label" : "character"
+    }
   },
     "CarterTrainingSamples": {
       "isaac.ml.SampleAccumulator": {

@@ -817,7 +817,7 @@ class Model(object):
                     tf.summary.histogram('scale%d_icp_ry%s' % (s, key), transform[:, 4])
                     tf.summary.histogram('scale%d_icp_rz%s' % (s, key), transform[:, 5])
 
-        self.log_gradients()
+        # self.log_gradients()
 
     def log_gradients(self, num_layers=4):
         gr = tf.get_default_graph()

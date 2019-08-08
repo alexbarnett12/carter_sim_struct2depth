@@ -45,22 +45,32 @@ class ImageProcessor:
 
     def create_mask_triplet(self, images):
 
-        # Define list of seg_mask images
-        seg_list = []
+        ORIGINAL_HEIGHT, ORIGINAL_WIDTH, _, = images[0].shape
 
-        # for img in images:
-        #     seg_list.append(self.create_mask(img))
+        big_seg_img = np.zeros(shape=(HEIGHT, WIDTH * SEQ_LENGTH, 3))
+        wct = 0
 
-        # Align seg_masks
-        # seg_list[0], seg_list[1], seg_list[2] = align(seg_list[0], seg_list[1], seg_list[2])
-        big_seg_img = np.zeros(shape=(HEIGHT, WIDTH*SEQ_LENGTH, 3))
+        for img in images:
 
-        # Create seg_mask triplet
-        # for k in range(0, 3):
-        #     big_seg_img[:, k * WIDTH:(k + 1) * WIDTH] = seg_list[k]
+            if img.shape is not (HEIGHT, WIDTH):
+                img = cv2.resize(img, (WIDTH, HEIGHT))
+            for i in range(3):
+                big_seg_img[:, wct * WIDTH:(wct + 1) * WIDTH, i] = img
+            wct += 1
+        big_seg_img *= 250
+        # # Define list of seg_mask images
+        # seg_list = []
+        # # for img in images:
+        # #     seg_list.append(self.create_mask(img))
+        # # Align seg_masks
+        # # seg_list[0], seg_list[1], seg_list[2] = align(seg_list[0], seg_list[1], seg_list[2])
+        # # big_seg_img = np.zeros(shape=(HEIGHT, WIDTH*SEQ_LENGTH, 3))
+        # # Create seg_mask triplet
+        # # for k in range(0, 3):
+        # #     big_seg_img[:, k * WIDTH:(k + 1) * WIDTH] = seg_list[k]
 
         return big_seg_img
 
 
-    def process_image(self, images):
-        return self.create_triplet(images), self.create_mask_triplet(images)
+    def process_image(self, images, seg_masks):
+        return self.create_triplet(images), self.create_mask_triplet(seg_masks)

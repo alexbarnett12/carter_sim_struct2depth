@@ -198,6 +198,32 @@
       ]
     },
     {
+      "name": "LeftSegmentationEncoder",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.ml.SegmentationEncoder",
+          "type": "isaac::ml::SegmentationEncoder"
+        }
+      ]
+    },
+    {
+      "name": "TensorSynchronizer",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.ml.TensorSynchronization",
+          "type": "isaac::ml::TensorSynchronization"
+        }
+      ]
+    },
+    {
       "name": "CarterTrainingSamples",
       "components": [
         {
@@ -256,6 +282,19 @@
           "type": "isaac::alice::RecorderBridge"
         }
       ]
+    },
+    {
+      "name": "segmentation_encoder",
+      "components": [
+        {
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "isaac.alice.PyCodelet",
+          "type": "isaac::alice::PyCodelet"
+        }
+      ]
     }
   ],
   "edges": [
@@ -288,6 +327,10 @@
       "target": "LeftSegmentationCameraViewer/isaac.viewers.SegmentationCameraViewer/segmentation_listener"
     },
     {
+      "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/SegmentationSensor",
+      "target": "LeftSegmentationEncoder/isaac.ml.SegmentationEncoder/segmentation"
+    },
+    {
       "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/BoundingBox",
       "target": "LeftDetectionsViewer/isaac.viewers.DetectionsViewer/detections"
     },
@@ -297,6 +340,14 @@
     },
     {
       "source": "LeftColorCameraEncoder/isaac.ml.ColorCameraEncoderCpu/tensor",
+      "target": "TensorSynchronizer/isaac.ml.TensorSynchronization/tensor1"
+    },
+    {
+      "source": "LeftSegmentationEncoder/isaac.ml.SegmentationEncoder/tensor",
+      "target": "TensorSynchronizer/isaac.ml.TensorSynchronization/tensor2"
+    },
+    {
+      "source": "TensorSynchronizer/isaac.ml.TensorSynchronization/tensorlist",
       "target": "CarterTrainingSamples/isaac.ml.SampleAccumulator/samples"
     },
     {

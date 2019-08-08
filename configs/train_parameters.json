@@ -1,12 +1,12 @@
 {
-  "image_dir" : "/mnt/sim_images/sim_images_40_delay_hospital",
+  "image_dir" : "/mnt/sim_images/sim_images_40_delay",
   "seg_mask_dir" : "/mnt/sim_seg_masks",
   "intrinsics_dir" : "/mnt/sim_intrinsics",
   "num_saved_images" : 134991,
   "using_saved_images" : false,
   "pretrained_ckpt" : "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/struct2depth/pretrained_ckpt/model-199160.ckpt",
   "imagenet_ckpt" : "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/struct2depth/resnet_pretrained/model.ckpt",
-  "checkpoint_dir" :"/mnt/ckpts/sim/warehouse/40_delay_pretrained_8_6",
+  "checkpoint_dir" :"/mnt/ckpts/sim/warehouse/40_delay_pretrained_8_8",
   "cuda_device" : "0",
   "file_extension" : "png",
   "batch_size" : 4,
@@ -35,7 +35,7 @@
   "use_skip" : true,
   "equal_weighting" : false,
   "joint_encoder" : false,
-  "handle_motion" : false,
+  "handle_motion" : true,
   "master" : "local",
   "shuffle" : true,
   "max_ckpts_to_keep" : 1000000

@@ -7,11 +7,13 @@ sys.path.append(ROOT_DIR)
 from engine.pyalice import *
 import packages.ml
 from differential_base_state import DifferentialBaseState
+from segmentation_encoder import SegmentationEncoder
 
 def create_isaac_app(filename):
     isaac_app = Application(app_filename=filename)
 
     isaac_app.register({"differential_base_state": DifferentialBaseState})
+    isaac_app.register({"segmentation_encoder": SegmentationEncoder})
 
     return isaac_app
 
