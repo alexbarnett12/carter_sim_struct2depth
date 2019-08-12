@@ -8,7 +8,7 @@ import tensorflow as tf
 import numpy as np
 import cv2
 
-from isaac_app import create_isaac_app, start_isaac_app
+from isaac_app import create_isaac_app, start_isaac_app, create_sample_bridge
 from struct2depth.process_image import ImageProcessor
 import time
 import csv
@@ -34,11 +34,10 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # Create the application.
-isaac_app = create_isaac_app()
+isaac_app = create_isaac_app(filename='/mnt/isaac_2019_2/apps/carter_sim_struct2depth/apps/carter_sim.app.json')
 
 # Startup the bridge to get data.
-node = isaac_app.find_node_by_name("CarterTrainingSamples")
-bridge = packages.ml.SampleAccumulator(node)
+bridge = create_sample_bridge(isaac_app)
 
 # Start the app
 start_isaac_app(isaac_app)
@@ -59,8 +58,17 @@ while True:
     with open('/mnt/isaac_2019_2/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
         csv_reader = csv.reader(speed_file, delimiter=',')
         for row in csv_reader:
-            speed = float(row[0])
-            angular_speed = float(row[1])
+            if len(row)==2:
+                try:
+                    float(row[0])
+                    speed = float(row[0])
+                except ValueError:
+                    speed = 0
+                    try:
+                        float(row[0])
+                        angular_speed = float(row[1])
+                    except ValueError:
+                        angular_speed = 0
 
     # Only save image if the robot is moving or rotating above a threshold speed
     # Images below these thresholds do not have a great enough disparity for the network to learn depth.
@@ -81,10 +89,10 @@ while True:
                                                                          images[i + 2][0]]))
 
             # Save to directory
-            cv2.imwrite('/mnt/sim_images/test/{}.png'.format(count),
+            cv2.imwrite('/mnt/sim_images/sim_images_40_delay_office/{}-office.png'.format(count),
                         np.uint8(big_img))
-            cv2.imwrite('/mnt/sim_seg_masks/test/{}-fseg.png'.format(count), big_seg_img)
-            f = open('/mnt/sim_intrinsics/test/{}.csv'.format(count), 'w')
+            cv2.imwrite('/mnt/sim_seg_masks_office/{}-office-fseg.png'.format(count), big_seg_img)
+            f = open('/mnt/sim_intrinsics_office/{}-office.csv'.format(count), 'w')
             f.write(intrinsics)
             f.close()
 
