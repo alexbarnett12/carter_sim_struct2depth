@@ -13,6 +13,11 @@
 # limitations under the License.
 # ==============================================================================
 
+"""Creates a TensorFlow Dataset pipeline based off images saved to disk. Receives image sequences,
+   corresponding segmentation masks, and camera intrinsics and feeds them into a Dataset.
+   The Datasets are then pre-processed with random flipping, color augmentation, and shuffling to improve dataset
+   quality."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

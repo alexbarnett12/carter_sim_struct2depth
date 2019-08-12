@@ -13,7 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Train the model. Please refer to README for example usage."""
+"""Trains a monocular depth and egomotion network. Can optionally train to predict object motion.
+   Please refer to README for example usage."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -26,8 +27,8 @@ import time
 import json
 
 from absl import app
-from absl import flags
 from absl import logging
+
 import numpy as np
 import tensorflow as tf
 
@@ -37,6 +38,8 @@ from struct2depth import nets
 from struct2depth import util
 
 gfile = tf.gfile
+
+# Paths to config files with training parameters. Most of the editable parameters should be modified through these files.
 TRAINING_CONFIG_PATH = "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/configs/train_parameters.json"
 ISAAC_CONFIG_PATH = "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/configs/isaac_parameters.json"
 
@@ -95,6 +98,7 @@ def load_isaac_parameters():
            config["speed_threshold"], \
            config["angular_speed_threshold"]
 
+# Checks that chosen parameters do not conflict with each other and do not extend beyond the current scope of the project.
 def verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_loss, img_height, img_width,
                       imagenet_ckpt, imagenet_norm, architecture, exhaustive_mode, icp_weight, checkpoint_dir):
     if handle_motion and joint_encoder:
@@ -132,6 +136,7 @@ def verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_
     if checkpoint_dir is None:
         raise ValueError('Must specify a checkpoint directory')
 
+    # Create a checkpoint directory if it does not already exist.
     if not gfile.Exists(checkpoint_dir):
         gfile.MakeDirs(checkpoint_dir)
 
@@ -205,6 +210,7 @@ def main(_):
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = cuda_device
 
+    # Create the training model.
     train_model = model.Model(image_dir=image_dir,
                               seg_mask_dir=seg_mask_dir,
                               intrinsics_dir=intrinsics_dir,
@@ -243,14 +249,17 @@ def main(_):
                               speed_threshold=speed_threshold,
                               angular_speed_threshold=angular_speed_threshold)
 
+    # Perform training
     train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir, train_steps,
           summary_freq, isaac_app, max_ckpts_to_keep, save_ckpt_every, using_saved_images)
 
-
+# Train the model. First attempts to restore either a pretrained Imagenet checkpoint or the most recent checkpoint
+# in the checkpoint directory. Then loops until max training steps specified has passed. Periodically saves checkpoints
+# tf summaries.
 def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir, train_steps,
           summary_freq, isaac_app, max_ckpts_to_keep, save_ckpt_every, using_saved_images):
-    """Train model."""
 
+    # Restore variables from checkpoint
     vars_to_restore = None
     if pretrained_ckpt is not None:
         vars_to_restore = util.get_vars_to_save_and_restore(pretrained_ckpt)
@@ -258,16 +267,22 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir, train_ste
     elif imagenet_ckpt:
         vars_to_restore = util.get_imagenet_vars_to_restore(imagenet_ckpt)
         ckpt_path = imagenet_ckpt
+
     pretrain_restorer = tf.train.Saver(vars_to_restore)
     vars_to_save = util.get_vars_to_save_and_restore()
     vars_to_save[train_model.global_step.op.name] = train_model.global_step
     saver = tf.train.Saver(vars_to_save, max_to_keep=max_ckpts_to_keep)
+
+    # Create a supervisor.
     sv = tf.train.Supervisor(logdir=checkpoint_dir, save_summaries_secs=0,
                              saver=None)
+
+    # Set configs.
     config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
+    config.gpu_options.allow_growth = True # Doesn't limit GPU usage.
     with sv.managed_session(config=config) as sess:
 
+        # Load ckpt variables.
         if pretrained_ckpt is not None or imagenet_ckpt:
             logging.info('Restoring pretrained weights from %s', ckpt_path)
             pretrain_restorer.restore(sess, ckpt_path)
@@ -280,7 +295,7 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir, train_ste
 
         logging.info('Training...')
 
-        # Start the application and Sight server
+        # Start the Isaac application and Sight server.
         if not using_saved_images:
             start_isaac_app(isaac_app)
             logging.info("Isaac application loaded")
@@ -291,29 +306,38 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir, train_ste
         step = 1
         while step < train_steps:
 
+            # Define training on one batch.
             fetches = {
                 'train': train_model.train_op,
                 'global_step': train_model.global_step,
                 'incr_global_step': train_model.incr_global_step
             }
+
+            # Retrieve loss and summaries.
             if step % summary_freq == 0:
                 fetches['loss'] = train_model.total_loss
                 fetches['summary'] = sv.summary_op
 
+            # Execute training
             results = sess.run(fetches)
             global_step = results['global_step']
 
+            # Save summaries.
             if step % summary_freq == 0:
                 sv.summary_writer.add_summary(results['summary'], global_step)
+
+                # Calculate current epoch, training step, and cycle.
                 train_epoch = math.ceil(global_step / steps_per_epoch)
                 train_step = global_step - (train_epoch - 1) * steps_per_epoch
                 this_cycle = time.time() - last_summary_time
                 last_summary_time += this_cycle
+
                 logging.info(
                     'Epoch: [%2d] [%5d/%5d] time: %4.2fs (%ds total) loss: %.3f',
                     train_epoch, train_step, steps_per_epoch, this_cycle,
                     time.time() - start_time, results['loss'])
 
+            # Save ckpts.
             if step % save_ckpt_every == 0:
                 logging.info('[*] Saving checkpoint to %s...', checkpoint_dir)
                 saver.save(sess, os.path.join(checkpoint_dir, 'model'),

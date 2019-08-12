@@ -13,20 +13,20 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Reads data that is produced by dataset/gen_data.py."""
+"""Creates a TensorFlow Dataset pipeline based off images received from Isaac Sim. Receives image sequences,
+   corresponding segmentation masks, and camera intrinsics and feeds them into the Dataset through a generator.
+   The Datasets are then pre-processed with random flipping, color augmentation, and shuffling to improve dataset
+   quality."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 # System imports
-import os
-import sys
 from absl import logging
 import tensorflow as tf
 import numpy as np
 import csv
-import cv2
 import time
 
 # Struct2depth imports
@@ -42,7 +42,7 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_SD = (0.229, 0.224, 0.225)
 
-# Op names.
+# Dataset names.
 COLOR_IMAGE = 'image'
 SEG_MASK = 'segmentation_mask'
 CAMERA_MAT = 'camera_matrix'
@@ -50,7 +50,7 @@ INTRINSICS = 'camera_matrix'
 INTRINSICS_INV = 'camera_matrix_inverse'
 IMAGE_NORM = 'imagenet_norm'
 
-# Variables to set
+# Data augmentation parameters to set
 FLIP_RANDOM = 'random'  # Always perform random flipping of input images.
 FLIP_ALWAYS = 'always'  # Always flip image input, used for test augmentation.
 FLIP_NONE = 'none'  # Always disables flipping.
@@ -102,13 +102,23 @@ class DataReader(object):
         self.repetitions = repetitions
 
     # Retrieve current robot linear and angular speed from Isaac Sim
+    # Since robot state can only be passed in real time through the Isaac SDK messaging system to other codelets,
+    # instead the robot speed is saved to a .csv file.
     def update_speed(self):
         with open('/mnt/isaac_2019_2/apps/carter_sim_struct2depth/differential_base_speed/speed.csv') as speed_file:
             csv_reader = csv.reader(speed_file, delimiter=',')
             for row in csv_reader:
                 if len(row) == 2:
-                    self.speed = float(row[0])
-                    self.angular_speed = float(row[1])
+                    try:
+                        float(row[0])
+                        self.speed = float(row[0])
+                    except ValueError:
+                        self.speed = 0 # speed is not currently readable
+                    try:
+                        float(row[1])
+                        self.angular_speed = float(row[1])
+                    except ValueError:
+                        self.angular_speed = 0 # angular speed is not currently readable
 
     # Check if Isaac Sim bridge has samples
     def has_samples(self, bridge):
@@ -128,9 +138,10 @@ class DataReader(object):
 
                 images = []
 
+                # Check the current robot speed.
                 self.update_speed()
 
-                # Only collect samples if robot is moving faster than a certain threshold
+                # Only collect samples if robot is moving faster than a specified speed threshold
                 if self.speed > self.speed_threshold or self.angular_speed > self.angular_speed_threshold:
 
                     # Retrieve a total of (batch_size * seq_length) images
@@ -150,7 +161,6 @@ class DataReader(object):
                         time.sleep(self.time_delay)
 
                         # TODO: Turn seg mask generator into an Isaac node
-                        # TODO: Fix MRCNN to work within another tf.Graph()
                         # Create wide image and segmentation triplets
                         if (i + 1) % self.seq_length == 0:
                             image_seq, seg_mask_seq = img_processor.process_image([images[i - 2],
@@ -213,8 +223,8 @@ class DataReader(object):
 
         return dataset
 
+    # Load data from Isaac Sim into a TensorFlow Dataset generator
     def read_data(self):
-        """Provides images and camera intrinsics."""
         with tf.name_scope('data_loading'):
 
             # Startup the sample accumulator bridge to get Isaac Sim data
@@ -239,7 +249,7 @@ class DataReader(object):
 
         with tf.name_scope('preprocessing'):
 
-            # Scale image values from 0-255 to 0-1
+            # Scale image values from 0-255 to 0-1.
             image_ds = image_ds.map(lambda x: x / 255.0, num_parallel_calls=AUTOTUNE)
 
             # Randomly augment colorspace

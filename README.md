@@ -26,7 +26,8 @@ Pay extra attention to the NVIDIA GPU and driver requirements; CUDA 10.0 is requ
 **the RTX 2080 Ti does not work with these packages and Isaac Sim.**
 
 Once you have installed NVIDIA Isaac and followed their basic tutorials, you can run all the programs in this repo the same way
-with Bazel. 
+with Bazel. However, relative directories do not work within the Bazel Isaac SDK workspace, so you must edit the absolute path 
+at the beginning of many of the files in this repo.
 
 ## Training
 The model can be trained either straight from the simulation or with saved data. All training parameters can be 

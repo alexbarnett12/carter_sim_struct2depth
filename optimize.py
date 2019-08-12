@@ -262,13 +262,15 @@ def main(_):
                               optimize=True,
                               num_steps=num_steps)
 
-    finetune_inference(train_model, model_ckpt,
-                       output_dir, isaac_app)
+    finetune_inference(train_model, model_ckpt, output_dir, isaac_app, using_saved_images, num_steps, batch_size, flip,
+                       save_every, save_previews, file_extension)
 
 
+# Run inference while finetuning model
 def finetune_inference(train_model, model_ckpt, output_dir, isaac_app, using_saved_images, num_steps, batch_size, flip,
                        save_every, save_previews, file_extension):
-    """Train model."""
+
+    # Restore checkpoint variables
     vars_to_restore = None
     if model_ckpt is not None:
         vars_to_restore = util.get_vars_to_save_and_restore(model_ckpt)
@@ -278,17 +280,19 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app, using_sav
                              summary_op=None)
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    failed_heuristic = []
     with sv.managed_session(config=config) as sess:
-        # TODO: Caching the weights would be better to avoid I/O bottleneck.
 
         # Start the application and Sight server
         if not using_saved_images:
             start_isaac_app(isaac_app)
             logging.info("Isaac application loaded")
+
+        # Restore ckpt weights
         if model_ckpt is not None:
             logging.info('Restored weights from %s', ckpt_path)
             pretrain_restorer.restore(sess, ckpt_path)
+
+        # Create output directory
         if not gfile.Exists(output_dir):
             gfile.MakeDirs(output_dir)
 

@@ -36,6 +36,7 @@ import util
 gfile = tf.gfile
 slim = tf.contrib.slim
 
+# Number of image scales used to help with scale invariance
 NUM_SCALES = 4
 
 
@@ -175,6 +176,7 @@ class Model(object):
                 constraint=lambda x: tf.clip_by_value(x, 0, np.infty))
 
         if self.is_training:
+            # Create a data reader for images saved to disk.
             if self.using_saved_images:
                 self.reader = reader_saved_images.DataReader(self.image_dir,
                                                              self.seg_mask_dir,
@@ -195,6 +197,7 @@ class Model(object):
                                                              self.optimize,
                                                              self.repetitions)
             else:
+                # Read data directly from Isaac Sim.
                 self.reader = reader.DataReader(self.batch_size,
                                                 self.img_height,
                                                 self.img_width,
