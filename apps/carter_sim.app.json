@@ -17,7 +17,8 @@
       "planner",
       "viewers",
       "flatsim",
-      "ml"
+      "ml",
+      "carter_sim_struct2depth:seg_mask_components"
   ], 
   "config": {},
   "graph": {

@@ -1,0 +1,20 @@
+{
+  "name": "ping",
+  "modules" : [
+    "carter_sim_struct2depth:seg_mask_components"
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "name": "seg_masks",
+        "components": [
+          {
+            "name": "seg_mask",
+            "type": "SegMask"
+          }
+        ]
+      }
+    ],
+    "edges": []
+  }
+}

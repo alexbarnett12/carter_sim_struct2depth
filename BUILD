@@ -8,11 +8,11 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 """
 
-load("//engine/build:isaac.bzl", "isaac_app")
+load("//engine/build:isaac.bzl", "isaac_app", "isaac_cc_module")
 
 isaac_app(
     name = "carter_sim",
-    app_json_file = "carter_sim.app.json",
+    app_json_file = "apps/carter_sim.app.json",
     data = [
         "configs/carter.config.json",
         "graphs/carter.graph.json",
@@ -27,8 +27,26 @@ isaac_app(
         "planner",
         "viewers",
         "flatsim",
+        "//apps/carter_sim_struct2depth:seg_mask_components"
     ],
 )
+
+isaac_app(
+    name = "ping",
+    app_json_file = "apps/ping.app.json",
+    modules = ["//apps/carter_sim_struct2depth:seg_mask_components"]
+)
+
+isaac_cc_module(
+  name = "seg_mask_components",
+  srcs = ["SegMask.cpp"],
+  hdrs = ["SegMask.hpp"],
+  visibility = ["//visibility:public"],
+  deps = [
+  "//engine/alice:alice"
+  ],
+)
+
 
 py_binary(
     name = "train",
