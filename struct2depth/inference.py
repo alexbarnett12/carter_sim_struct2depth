@@ -33,11 +33,14 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
 from absl import app
 from absl import flags
 from absl import logging
 #import matplotlib.pyplot as plt
 
+ROOT_DIR = os.path.abspath("/mnt/isaac_2019_2/apps/carter_sim_struct2depth/struct2depth")
+sys.path.append(ROOT_DIR)
 import model
 import numpy as np
 import fnmatch
@@ -412,6 +415,27 @@ def main(_):
                  inference_crop=FLAGS.inference_crop,
                  use_masks=FLAGS.use_masks)
 
+def run_inference_experiment(input_dir, output_dir, model_ckpt):
+    _run_inference(output_dir=output_dir,
+                   file_extension=FLAGS.file_extension,
+                   depth=FLAGS.depth,
+                   egomotion=FLAGS.egomotion,
+                   model_ckpt=model_ckpt,
+                   input_dir=input_dir,
+                   input_list_file=FLAGS.input_list_file,
+                   batch_size=FLAGS.batch_size,
+                   img_height=FLAGS.img_height,
+                   img_width=FLAGS.img_width,
+                   seq_length=FLAGS.seq_length,
+                   architecture=FLAGS.architecture,
+                   imagenet_norm=FLAGS.imagenet_norm,
+                   use_skip=FLAGS.use_skip,
+                   joint_encoder=FLAGS.joint_encoder,
+                   shuffle=FLAGS.shuffle,
+                   flip_for_depth=FLAGS.flip,
+                   inference_mode=FLAGS.inference_mode,
+                   inference_crop=FLAGS.inference_crop,
+                   use_masks=FLAGS.use_masks)
 
 if __name__ == '__main__':
   app.run(main)
