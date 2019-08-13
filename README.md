@@ -26,8 +26,7 @@ Pay extra attention to the NVIDIA GPU and driver requirements; CUDA 10.0 is requ
 **the RTX 2080 Ti does not work with these packages and Isaac Sim.**
 
 Once you have installed NVIDIA Isaac and followed their basic tutorials, you can run all the programs in this repo the same way
-with Bazel. However, relative directories do not work within the Bazel Isaac SDK workspace, so you must edit the absolute path 
-at the beginning of many of the files in this repo.
+with Bazel. 
 
 ## Training
 The model can be trained either straight from the simulation or with saved data. All training parameters can be 
@@ -79,7 +78,7 @@ objects and very clunky roaming humans. To change the map Carter drives in, do t
     
 3. When launching Isaac Sim, change the <MAP> flag referenced in the Training section to the correct map name:
 
-    Warehouse: Carter_Warehouse_P
+    Warehouse: CarterWarehouse_P
     
     Office: Carter_Office
     
