@@ -1,0 +1,19 @@
+{
+  "output_dir" : null,
+  "file_extension" : "png",
+  "depth" : true,
+  "egomotion" : false,
+  "model_ckpt" : "struct2depth/pretrained_ckpt/model-1399",
+  "batch_size" : 1,
+  "img_height" : 128,
+  "img_width" : 416,
+  "seq_length" : 3,
+  "architecture" : "resnet",
+  "imagenet_norm" : true,
+  "use_skip" : true,
+  "joint_encoder" : false,
+  "shuffle" : false,
+  "flip" : false,
+  "inference_mode" : "single",
+  "use_masks" : false
+}

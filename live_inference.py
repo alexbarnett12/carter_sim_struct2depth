@@ -21,13 +21,12 @@ from __future__ import print_function
 
 import os
 from absl import app
-from absl import flags
 from absl import logging
 import time
-# import matplotlib.pyplot as plt
 import numpy as np
 import fnmatch
 import tensorflow as tf
+import json
 
 from isaac_app import create_isaac_app, start_isaac_app
 from struct2depth import model
@@ -43,82 +42,13 @@ from monocular_depth_map import MonocularDepthMap
 
 gfile = tf.gfile
 
-# CMAP = 'plasma'
-
 kSampleNumbers = 1
 
 INFERENCE_MODE_SINGLE = 'single'  # Take plain single-frame input.
 INFERENCE_MODE_TRIPLETS = 'triplets'  # Take image triplets as input.
-# For KITTI, we just resize input images and do not perform cropping. For
-# Cityscapes, the car hood and more image content has been cropped in order
-# to fit aspect ratio, and remove static content from the images. This has to be
-# kept at inference time.
-INFERENCE_CROP_NONE = 'none'
-INFERENCE_CROP_CITYSCAPES = 'cityscapes'
 
-flags.DEFINE_string('output_dir', None, 'Directory to store predictions.')
-flags.DEFINE_string('file_extension', 'png', 'Image data file extension of '
-                                             'files provided with input_dir. Also determines the output '
-                                             'file format of depth prediction images.')
-flags.DEFINE_bool('depth', True, 'Determines if the depth prediction network '
-                                 'should be executed and its predictions be saved.')
-flags.DEFINE_bool('egomotion', False, 'Determines if the egomotion prediction '
-                                      'network should be executed and its predictions be saved. If '
-                                      'inference is run in single inference mode, it is assumed '
-                                      'that files in the same directory belong in the same '
-                                      'sequence, and sorting them alphabetically establishes the '
-                                      'right temporal order.')
-flags.DEFINE_string('model_ckpt', 'struct2depth/pretrained_ckpt/model-1399', 'Model checkpoint to evaluate.')
-flags.DEFINE_string('input_dir', None, 'Directory containing image files to '
-                                       'evaluate. This crawls recursively for images in the '
-                                       'directory, mirroring relative subdirectory structures '
-                                       'into the output directory.')
-flags.DEFINE_string('input_list_file', None, 'Text file containing paths to '
-                                             'image files to process. Paths should be relative with '
-                                             'respect to the list file location. Relative path '
-                                             'structures will be mirrored in the output directory.')
-flags.DEFINE_integer('batch_size', 1, 'The size of a sample batch')
-flags.DEFINE_integer('img_height', 128, 'Input frame height.')
-flags.DEFINE_integer('img_width', 416, 'Input frame width.')
-flags.DEFINE_integer('seq_length', 3, 'Number of frames in sequence.')
-flags.DEFINE_enum('architecture', nets.RESNET, nets.ARCHITECTURES,
-                  'Defines the architecture to use for the depth prediction '
-                  'network. Defaults to ResNet-based encoder and accompanying '
-                  'decoder.')
-flags.DEFINE_boolean('imagenet_norm', True, 'Whether to normalize the input '
-                                            'images channel-wise so that they match the distribution '
-                                            'most ImageNet-models were trained on.')
-flags.DEFINE_bool('use_skip', True, 'Whether to use skip connections in the '
-                                    'encoder-decoder architecture.')
-flags.DEFINE_bool('joint_encoder', False, 'Whether to share parameters '
-                                          'between the depth and egomotion networks by using a joint '
-                                          'encoder architecture. The egomotion network is then '
-                                          'operating only on the hidden representation provided by the '
-                                          'joint encoder.')
-flags.DEFINE_bool('shuffle', False, 'Whether to shuffle the order in which '
-                                    'images are processed.')
-flags.DEFINE_bool('flip', False, 'Whether images should be flipped as well as '
-                                 'resulting predictions (for test-time augmentation). This '
-                                 'currently applies to the depth network only.')
-flags.DEFINE_enum('inference_mode', INFERENCE_MODE_SINGLE,
-                  [INFERENCE_MODE_SINGLE,
-                   INFERENCE_MODE_TRIPLETS],
-                  'Whether to use triplet mode for inference, which accepts '
-                  'triplets instead of single frames.')
-flags.DEFINE_enum('inference_crop', INFERENCE_CROP_NONE,
-                  [INFERENCE_CROP_NONE,
-                   INFERENCE_CROP_CITYSCAPES],
-                  'Whether to apply a Cityscapes-specific crop on the input '
-                  'images first before running inference.')
-flags.DEFINE_bool('use_masks', False, 'Whether to mask out potentially '
-                                      'moving objects when feeding image input to the egomotion '
-                                      'network. This might improve odometry results when using '
-                                      'a motion model. For this, pre-computed segmentation '
-                                      'masks have to be available for every image, with the '
-                                      'background being zero.')
-
-FLAGS = flags.FLAGS
-
+INFERENCE_CONFIG_FILE = 'configs/inference_parameters.json'
+ISAAC_CONFIG_FILE = 'configs/isaac_parameters.json'
 
 def _run_inference(isaac_app=None,
                    output_dir=None,
@@ -126,8 +56,6 @@ def _run_inference(isaac_app=None,
                    depth=True,
                    egomotion=False,
                    model_ckpt=None,
-                   input_dir=None,
-                   input_list_file=None,
                    batch_size=1,
                    img_height=128,
                    img_width=416,
@@ -139,7 +67,6 @@ def _run_inference(isaac_app=None,
                    shuffle=False,
                    flip_for_depth=False,
                    inference_mode=INFERENCE_MODE_SINGLE,
-                   inference_crop=INFERENCE_CROP_NONE,
                    use_masks=False
                    ):
     """Runs inference. Refer to flags in inference.py for details."""
@@ -192,11 +119,7 @@ def _run_inference(isaac_app=None,
 
                 # Read image and run inference.
                 if inference_mode == INFERENCE_MODE_SINGLE:
-                    if inference_crop == INFERENCE_CROP_NONE:
                         im = util.load_image(im_files[i], resize=(img_width, img_height))
-                    elif inference_crop == INFERENCE_CROP_CITYSCAPES:
-                        im = util.crop_cityscapes(util.load_image(im_files[i]),
-                                                  resize=(img_width, img_height))
                 elif inference_mode == INFERENCE_MODE_TRIPLETS:
                     im = util.load_image(im_files[i], resize=(img_width * 3, img_height))
                     im = im[:, img_width:img_width * 2]
@@ -385,47 +308,71 @@ def _recursive_glob(treeroot, pattern):
         results.extend(os.path.join(base, f) for f in files)
     return results
 
-def main(_):
-    # if (flags.input_dir is None) == (flags.input_list_file is None):
-    #  raise ValueError('Exactly one of either input_dir or input_list_file has '
-    #                   'to be provided.')
-    # if not flags.depth and not flags.egomotion:
-    #  raise ValueError('At least one of the depth and egomotion network has to '
-    #                   'be called for inference.')
-    # if (flags.inference_mode == inference_lib.INFERENCE_MODE_TRIPLETS and
-    #    flags.seq_length != 3):
-    #  raise ValueError('For sequence lengths other than three, single inference '
-    #                   'mode has to be used.')
+def load_inference_parameters(config):
+    return config["output_dir"], \
+           config["file_extension"], \
+           config["depth"], \
+           config["egomotion"], \
+           config["model_ckpt"], \
+           config["input_dir"], \
+           config["input_list_file"], \
+           config["batch_size"], \
+           config["img_height"], \
+           config["img_width"], \
+           config["seq_length"], \
+           config["architecture"], \
+           config["imagenet_norm"], \
+           config["use_skip"], \
+           config["joint_encoder"], \
+           config["shuffle"], \
+           config["flip"], \
+           config["inference_mode"], \
+           config["use_masks"]
 
-    isaac_app = create_isaac_app()
+def load_isaac_parameters(config):
+    with open(config) as f:
+        config = json.load(f)
+    return config["isaac_app_filename"]
+
+def verify_parameters(depth, egomotion, inference_mode, seq_length):
+    if not depth and not egomotion:
+     raise ValueError('At least one of the depth and egomotion network has to '
+                      'be called for inference.')
+    if (inference_mode == INFERENCE_MODE_TRIPLETS and
+       seq_length != 3):
+     raise ValueError('For sequence lengths other than three, single inference '
+                      'mode has to be used.')
+
+def main(_):
+
+    output_dir, \
+    file_extension, \
+    depth, \
+    egomotion, \
+    model_ckpt, \
+    batch_size, \
+    img_height, \
+    img_width, \
+    seq_length, \
+    architecture, \
+    imagenet_norm, \
+    use_skip, \
+    joint_encoder, \
+    shuffle, \
+    flip, \
+    inference_mode, \
+    use_masks = load_inference_parameters(INFERENCE_CONFIG_FILE)
+
+    isaac_app_filename = load_isaac_parameters(ISAAC_CONFIG_FILE)
+
+    verify_parameters(depth, egomotion, inference_mode, seq_length)
+
+    isaac_app = create_isaac_app(filename=isaac_app_filename)
     start_isaac_app(isaac_app)
 
     # Run indefinitely
     while True:
         continue
-
-    # _run_inference(isaac_app,
-    #                output_dir=FLAGS.output_dir,
-    #                file_extension=FLAGS.file_extension,
-    #                depth=FLAGS.depth,
-    #                egomotion=FLAGS.egomotion,
-    #                model_ckpt=FLAGS.model_ckpt,
-    #                input_dir=FLAGS.input_dir,
-    #                input_list_file=FLAGS.input_list_file,
-    #                batch_size=FLAGS.batch_size,
-    #                img_height=FLAGS.img_height,
-    #                img_width=FLAGS.img_width,
-    #                seq_length=FLAGS.seq_length,
-    #                architecture=FLAGS.architecture,
-    #                imagenet_norm=FLAGS.imagenet_norm,
-    #                use_skip=FLAGS.use_skip,
-    #                joint_encoder=FLAGS.joint_encoder,
-    #                shuffle=FLAGS.shuffle,
-    #                flip_for_depth=FLAGS.flip,
-    #                inference_mode=FLAGS.inference_mode,
-    #                inference_crop=FLAGS.inference_crop,
-    #                use_masks=FLAGS.use_masks
-    #                )
 
 
 if __name__ == '__main__':
