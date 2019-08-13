@@ -78,7 +78,7 @@ objects and very clunky roaming humans. To change the map Carter drives in, do t
     
 3. When launching Isaac Sim, change the <MAP> flag referenced in the Training section to the correct map name:
 
-    Warehouse: Carter_Warehouse_P
+    Warehouse: CarterWarehouse_P
     
     Office: Carter_Office
     

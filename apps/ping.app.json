@@ -1,20 +1,27 @@
 {
   "name": "ping",
   "modules" : [
-    "carter_sim_struct2depth:seg_mask_components"
+    "//packages/ping:ping_components"
   ],
   "graph": {
     "nodes": [
       {
-        "name": "seg_masks",
+        "name": "ping",
         "components": [
           {
-            "name": "seg_mask",
-            "type": "SegMask"
+            "name": "ping",
+            "type": "Ping"
           }
-        ]
+         ]
       }
     ],
     "edges": []
+  },
+  "config": {
+    "ping" : {
+      "ping" : {
+        "tick_period" : "1Hz"
+      }
+    }
   }
 }

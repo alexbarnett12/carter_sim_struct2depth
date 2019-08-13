@@ -18,7 +18,7 @@
       "viewers",
       "flatsim",
       "ml",
-      "carter_sim_struct2depth:seg_mask_components"
+      "//packages/ping:ping_components"
   ], 
   "config": {},
   "graph": {

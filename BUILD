@@ -27,26 +27,16 @@ isaac_app(
         "planner",
         "viewers",
         "flatsim",
-        "//apps/carter_sim_struct2depth:seg_mask_components"
+        "ml",
+        "//packages/ping:ping_components"
     ],
 )
 
 isaac_app(
     name = "ping",
     app_json_file = "apps/ping.app.json",
-    modules = ["//apps/carter_sim_struct2depth:seg_mask_components"]
+    modules = ["//packages/ping:ping_components"]
 )
-
-isaac_cc_module(
-  name = "seg_mask_components",
-  srcs = ["SegMask.cpp"],
-  hdrs = ["SegMask.hpp"],
-  visibility = ["//visibility:public"],
-  deps = [
-  "//engine/alice:alice"
-  ],
-)
-
 
 py_binary(
     name = "train",

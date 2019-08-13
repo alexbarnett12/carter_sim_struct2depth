@@ -211,19 +211,6 @@
       ]
     },
     {
-      "name": "SegmentationMask",
-      "components": [
-        {
-          "name": "message_ledger",
-          "type": "isaac::alice::MessageLedger"
-        },
-        {
-          "name": "seg_masks",
-          "type": "SegMask"
-        }
-      ]
-    },
-    {
       "name": "TensorSynchronizer",
       "components": [
         {
@@ -308,6 +295,15 @@
           "type": "isaac::alice::PyCodelet"
         }
       ]
+    },
+    {
+      "name": "ping",
+      "components": [
+        {
+          "name": "ping",
+          "type": "Ping"
+        }
+      ]
     }
   ],
   "edges": [
@@ -342,10 +338,6 @@
     {
       "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/SegmentationSensor",
       "target": "LeftSegmentationEncoder/isaac.ml.SegmentationEncoder/segmentation"
-    },
-    {
-      "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/SegmentationSensor",
-      "target": "SegmentationMask/seg_masks/seg_masks"
     },
     {
       "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/BoundingBox",
