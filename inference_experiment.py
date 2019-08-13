@@ -4,9 +4,9 @@ import glob
 import numpy as np
 
 INPUT_DIR = "/mnt/sim_images/sim_images_40_delay"
-DATA_DIR = "/mnt/sim_images/sim_images_40_delay"
-OUTPUT_DIR = "/mnt/results_inference/saved_images/warehouse/40_delay_pretrained_lr_0002_8_9"
-CKPT_DIR = "/mnt/ckpts/saved_images/warehouse/25_delay_7_20"
+DATA_DIR = "/mnt/sim_images/sim_images_overfit"
+OUTPUT_DIR = "/mnt/results_inference/saved_images/warehouse/40_delay_overfit_7_31"
+CKPT_DIR = "/mnt/ckpts/saved_images/warehouse/40_delay_overfit_7_31"
 
 # Epochs to test
 EPOCHS = [1, 2, 3, 4, 5, 10, 25, 50, 100]
@@ -39,6 +39,9 @@ processed_dirs = []
 for i in range(len(EPOCHS)):
     if EPOCHS[i] < total_epochs:
         output_dir = os.path.join(OUTPUT_DIR, str(EPOCHS[i]) + "_epochs")
+
+        if not os.path.exists(output_dir):
+            os.mkdir(output_dir)
 
         # Find ckpt dir nearest to desired epoch
         model_ckpt = os.path.join(CKPT_DIR, "model-{}".format(find_nearest(training_steps, EPOCHS[i] * dataset_size)))
