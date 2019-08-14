@@ -36,6 +36,9 @@ since the model requires corresponding seg masks and intrinsics to correctly tra
 can be modified in `configs/isaac_parameters.json`. Do not change `num_samples = 1`, since increasing the number will
 cause image sequences to not be in consecutive time. 
 
+If training on saved images, the data is expected to be formatted into three separate folders for image triplets,
+segmentation masks, and intrinsics. Refer to `save_image_triplets.py` for an example. 
+
 To train, run this in the top directory of this repo:
 
 `bazel run train`
@@ -99,15 +102,20 @@ parameters but will be updated to user a config JSON like the training script. T
 
 To run inference on saved images, use:
 
-`python3 struct2depth/inference.py --input_dir /path/to/input --output_dir /path/to/output --model_ckpt /path/to/ckpt
-`
+`python3 struct2depth/inference.py --input_dir /path/to/input --output_dir /path/to/output --model_ckpt /path/to/ckpt`
+
+Images just need to be saved into one folder for input_dir. 
 
 ## Online Refinement
-Online refinement can currently only be used on saved images. To do so, use:
+Online refinement can currently only be used on saved images. To do so, save images, seg masks, and intrinsics in a single
+directory. All names should be paired, with seg masks ending in "-fseg.png" and intrinsics ending in "_cam.txt." Then run 
+`gen_eigen_txt.py` to generate a file with all image names. Finally, run online refinement:
 
-`bazel run optimize`
+`python3 struct2depth/optimize_orig.py --output_dir /path/to/output --data_dir /path/to/data --triplet_list_file /path/to
+/eigen_triplets.txt --triplet_list_file_remains /path/to/remains --model_ckpt /path/to/ckpt`
 
-Model parameters can be modified as flags at the beginning of the script.
+`triplet_list_file_remains` is optional and represents any images that should not be finetuned. It has the same format as 
+`eigen_triplets.txt`
 
 ## Running Isaac Sim on a Server
 It is possible to use a remote server to train with Isaac Sim. Since Isaac Sim has specific CUDA and NVIDIA driver 
