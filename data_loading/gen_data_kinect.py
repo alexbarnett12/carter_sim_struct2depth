@@ -30,7 +30,7 @@ SEQ_LENGTH = 3
 WIDTH = 416
 HEIGHT = 128
 STEPSIZE = 1
-INPUT_DIR = '/mnt/test_images/warehouse_8_15/color'
+INPUT_DIR = '/mnt/kinect_images/warehouse_8_15/color'
 OUTPUT_DIR = '/mnt/train_data/warehouse_8_15'
 KINECT_CALIBRATION_FILE = 'kinect_camera_intrinsics.csv'
 
@@ -139,7 +139,3 @@ for d in glob.glob(INPUT_DIR + '/*/'):
         f.write(calib_representation)
         f.close()
         ct += 1
-
-# Generate train txt file
-generate_train_txt_kinect()
-

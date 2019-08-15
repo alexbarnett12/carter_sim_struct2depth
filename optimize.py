@@ -218,6 +218,10 @@ def main(_):
     np.random.seed(FIXED_SEED)
     random.seed(FIXED_SEED)
     flipping_mode = reader.FLIP_ALWAYS if flip else reader.FLIP_NONE
+
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = cuda_device
+
     train_model = model.Model(data_dir=data_dir,
                               using_saved_images=using_saved_images,
                               file_extension=file_extension,
@@ -270,19 +274,16 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app, using_sav
     pretrain_restorer = tf.train.Saver(vars_to_restore)
     sv = tf.train.Supervisor(logdir=None, save_summaries_secs=0, saver=None,
                              summary_op=None)
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
+
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5)
+    config = tf.ConfigProto(gpu_options=gpu_options)
+    config.gpu_options.allow_growth = False
     with sv.managed_session(config=config) as sess:
 
         # Start the application and Sight server
         if not using_saved_images:
             start_isaac_app(isaac_app)
             logging.info("Isaac application loaded")
-
-        # Restore ckpt weights
-        if model_ckpt is not None:
-            logging.info('Restored weights from %s', ckpt_path)
-            pretrain_restorer.restore(sess, ckpt_path)
 
         # Create output directory
         if not gfile.Exists(output_dir):
@@ -292,6 +293,11 @@ def finetune_inference(train_model, model_ckpt, output_dir, isaac_app, using_sav
         img_nr = 0
         step = 1
         while True:
+
+            # Restore ckpt weights
+            if step % num_steps is 0 and model_ckpt is not None:
+                logging.info('Restored weights from %s', ckpt_path)
+                pretrain_restorer.restore(sess, ckpt_path)
 
             # Run fine-tuning.
             logging.info('Running step %s of %s.', step, int(num_steps / batch_size))

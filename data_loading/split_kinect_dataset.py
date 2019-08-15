@@ -23,7 +23,7 @@ def main():
         # Extract files
         image_file = paths[i]
 
-        image_num = image_file.split('/')[4].split('.')[0]
+        image_num = image_file.split('/')[-1].split('.')[0]
 
         x = DATA_DIR + '/' + image_num + '_cam.csv'
         y = DATA_DIR + '/' + image_num + '-fseg.png'
