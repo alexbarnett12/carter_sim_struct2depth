@@ -22,7 +22,7 @@ import glob
 import numpy as np
 import cv2
 
-from .alignment import align
+from struct2depth.alignment import align
 
 SKIP = 2
 WIDTH = 416

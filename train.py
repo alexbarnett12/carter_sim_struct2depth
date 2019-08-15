@@ -47,10 +47,7 @@ def load_training_parameters():
     with open(TRAINING_CONFIG_PATH) as f:
         config = json.load(f)
 
-    return config["image_dir"], \
-           config["seg_mask_dir"], \
-           config["intrinsics_dir"], \
-           config["num_saved_images"], \
+    return config["data_dir"], \
            config["using_saved_images"], \
            config["pretrained_ckpt"], \
            config["imagenet_ckpt"], \
@@ -99,7 +96,7 @@ def load_isaac_parameters():
            config["angular_speed_threshold"]
 
 # Checks that chosen parameters do not conflict with each other and do not extend beyond the current scope of the project.
-def verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_loss, img_height, img_width,
+def verify_parameters(data_dir, handle_motion, joint_encoder, seq_length, compute_minimum_loss, img_height, img_width,
                       imagenet_ckpt, imagenet_norm, architecture, exhaustive_mode, icp_weight, checkpoint_dir):
     if handle_motion and joint_encoder:
         raise ValueError('Using a joint encoder is currently not supported when '
@@ -136,6 +133,10 @@ def verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_
     if checkpoint_dir is None:
         raise ValueError('Must specify a checkpoint directory')
 
+        # Check if data paths exist
+    if not gfile.Exists(data_dir):
+        raise ValueError("Not a valid data directory")
+
     # Create a checkpoint directory if it does not already exist.
     if not gfile.Exists(checkpoint_dir):
         gfile.MakeDirs(checkpoint_dir)
@@ -149,10 +150,7 @@ def main(_):
     random.seed(seed)
 
     # Load training parameters
-    image_dir, \
-    seg_mask_dir, \
-    intrinsics_dir, \
-    num_saved_images, \
+    data_dir, \
     using_saved_images, \
     pretrained_ckpt, \
     imagenet_ckpt, \
@@ -198,7 +196,7 @@ def main(_):
     angular_speed_threshold = load_isaac_parameters()
 
     # Ensure that parameters aren't breaking current model functionality
-    verify_parameters(handle_motion, joint_encoder, seq_length, compute_minimum_loss, img_height, img_width,
+    verify_parameters(data_dir, handle_motion, joint_encoder, seq_length, compute_minimum_loss, img_height, img_width,
                       imagenet_ckpt, imagenet_norm, architecture, exhaustive_mode, icp_weight, checkpoint_dir)
 
     # Create Isaac application.
@@ -211,10 +209,7 @@ def main(_):
     os.environ["CUDA_VISIBLE_DEVICES"] = cuda_device
 
     # Create the training model.
-    train_model = model.Model(image_dir=image_dir,
-                              seg_mask_dir=seg_mask_dir,
-                              intrinsics_dir=intrinsics_dir,
-                              num_saved_images=num_saved_images,
+    train_model = model.Model(data_dir=data_dir,
                               using_saved_images=using_saved_images,
                               file_extension=file_extension,
                               is_training=True,

@@ -83,10 +83,7 @@ class DataReader(object):
     """Reads stored sequences which are produced by dataset/gen_data.py."""
 
     def __init__(self,
-                 image_dir,
-                 seg_mask_dir,
-                 intrinsics_dir,
-                 num_saved_images,
+                 data_dir,
                  batch_size,
                  img_height,
                  img_width,
@@ -101,10 +98,7 @@ class DataReader(object):
                  isaac_app=None,
                  optimize=False,
                  repetitions=0):
-        self.image_dir = image_dir
-        self.seg_mask_dir = seg_mask_dir
-        self.intrinsics_dir = intrinsics_dir
-        self.num_saved_images = num_saved_images
+        self.data_dir = data_dir
         self.batch_size = batch_size
         self.img_height = img_height
         self.img_width = img_width
@@ -117,7 +111,7 @@ class DataReader(object):
         self.imagenet_norm = imagenet_norm
         self.shuffle = shuffle
         self.isaac_app = isaac_app
-        self.steps_per_epoch = int(self.num_saved_images / self.batch_size)
+        self.steps_per_epoch = 0 # Updated once image paths are loaded
         self.optimize = optimize
         self.repetition = repetitions
 
@@ -139,32 +133,15 @@ class DataReader(object):
         """Provides images and camera intrinsics."""
         with tf.name_scope('data_loading'):
 
-            # Check if data paths exist
-            if not gfile.Exists(self.image_dir):
-                raise ValueError("Not a valid image directory")
-            if not gfile.Exists(self.seg_mask_dir):
-                raise ValueError("Not a valid seg mask directory")
-            if not gfile.Exists(self.intrinsics_dir):
-                raise ValueError("Not a valid intrinsics directory")
+            if self.data_dir.endswith('/'):
+                self.data_dir = self.image_dir[:-1]
 
-            if self.image_dir.endswith('/'):
-                self.image_dir = self.image_dir[:-1]
-            if self.seg_mask_dir.endswith('/'):
-                self.seg_mask_dir = self.seg_mask_dir[:-1]
-            if self.intrinsics_dir.endswith('/'):
-                self.intrinsics_dir = self.intrinsics_dir[:-1]
+            all_image_paths = [f for f in sorted(glob.glob(self.data_dir + '/*.png')) if not 'fseg' in f]
+            all_image_paths_seg = sorted(glob.glob(self.data_dir + '/*-fseg.png'))
+            all_image_paths_intrinsics = sorted(glob.glob(self.data_dir + '/*_cam.csv'))
 
-            data_root_images = self.image_dir
-            data_root_seg = self.seg_mask_dir
-            data_root_intrinsics = self.intrinsics_dir
-
-            all_image_paths = glob.glob(data_root_images + '/*')
-            all_image_paths_seg = glob.glob(data_root_seg + '/*')
-            all_image_paths_intrinsics = glob.glob(data_root_intrinsics + '/*')
-
-            all_image_paths = self.sort_paths(all_image_paths, data_root_images, ".png")
-            all_image_paths_seg = self.sort_paths(all_image_paths_seg, data_root_seg, "-fseg.png")
-            all_image_paths_intrinsics = self.sort_paths(all_image_paths_intrinsics, data_root_intrinsics, ".csv")
+            # Update steps per epoch
+            self.steps_per_epoch = int(len(all_image_paths)) / self.batch_size
 
             # Raw image triplets
             path_ds = tf.data.Dataset.from_tensor_slices(all_image_paths)

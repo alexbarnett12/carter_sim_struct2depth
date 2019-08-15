@@ -22,9 +22,9 @@ import cv2
 import glob
 
 # Segmentation mask generation
-from .gen_masks_kitti import MaskGenerator
-from .alignment import align
-from .gen_train_txt import generate_train_txt
+from data_loading.gen_masks_kitti import MaskGenerator
+from struct2depth.alignment import align
+from data_loading.gen_train_txt_kitti import generate_train_txt
 
 SEQ_LENGTH = 3
 WIDTH = 416

@@ -26,7 +26,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import datetime
 import os
 import sys
 import random
@@ -50,15 +49,12 @@ FIXED_SEED = 8964  # Fixed seed for repeatability.
 TRAINING_CONFIG_PATH = "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/configs/optimize_parameters.json"
 ISAAC_CONFIG_PATH = "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/configs/isaac_parameters.json"
 
-
 def load_training_parameters():
     with open(TRAINING_CONFIG_PATH) as f:
         config = json.load(f)
 
     return config["output_dir"], \
-           config["image_dir"], \
-           config["seg_mask_dir"], \
-           config["intrinsics_dir"], \
+           config["data_dir"], \
            config["using_saved_images"], \
            config["model_ckpt"], \
            config["checkpoint_dir"], \
@@ -171,9 +167,7 @@ def main(_):
 
     # Load optimize parameters
     output_dir, \
-    image_dir, \
-    seg_mask_dir, \
-    intrinsics_dir, \
+    data_dir, \
     using_saved_images, \
     model_ckpt, \
     checkpoint_dir, \
@@ -224,9 +218,7 @@ def main(_):
     np.random.seed(FIXED_SEED)
     random.seed(FIXED_SEED)
     flipping_mode = reader.FLIP_ALWAYS if flip else reader.FLIP_NONE
-    train_model = model.Model(image_dir=image_dir,
-                              seg_mask_dir=seg_mask_dir,
-                              intrinsics_dir=intrinsics_dir,
+    train_model = model.Model(data_dir=data_dir,
                               using_saved_images=using_saved_images,
                               file_extension=file_extension,
                               is_training=True,

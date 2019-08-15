@@ -44,10 +44,7 @@ class Model(object):
     """Model code based on SfMLearner."""
 
     def __init__(self,
-                 image_dir=None,
-                 seg_mask_dir=None,
-                 intrinsics_dir=None,
-                 num_saved_images=0,
+                 data_dir=None,
                  using_saved_images=False,
                  file_extension='png',
                  is_training=True,
@@ -87,10 +84,7 @@ class Model(object):
                  angular_speed_threshold=0.25,
                  optimize=False,
                  num_steps=0):
-        self.image_dir = image_dir
-        self.seg_mask_dir = seg_mask_dir
-        self.intrinsics_dir = intrinsics_dir
-        self.num_saved_images = num_saved_images
+        self.data_dir = data_dir
         self.using_saved_images = using_saved_images
         self.file_extension = file_extension
         self.is_training = is_training
@@ -131,10 +125,7 @@ class Model(object):
         self.optimize = optimize
         self.repetitions = num_steps
 
-        logging.info('image_dir: %s', image_dir)
-        logging.info('seg_mask_dir: %s', seg_mask_dir)
-        logging.info('intrinsics_dir: %s', intrinsics_dir)
-        logging.info('num_saved_images: %s', num_saved_images)
+        logging.info('data_dir: %s', data_dir)
         logging.info('using_saved_images: %s', using_saved_images)
         logging.info('file_extension: %s', file_extension)
         logging.info('is_training: %s', is_training)
@@ -178,10 +169,7 @@ class Model(object):
         if self.is_training:
             # Create a data reader for images saved to disk.
             if self.using_saved_images:
-                self.reader = reader_saved_images.DataReader(self.image_dir,
-                                                             self.seg_mask_dir,
-                                                             self.intrinsics_dir,
-                                                             self.num_saved_images,
+                self.reader = reader_saved_images.DataReader(self.data_dir,
                                                              self.batch_size,
                                                              self.img_height,
                                                              self.img_width,
