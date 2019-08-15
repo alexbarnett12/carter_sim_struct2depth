@@ -140,6 +140,21 @@ class DataReader(object):
             all_image_paths_seg = sorted(glob.glob(self.data_dir + '/*-fseg.png'))
             all_image_paths_intrinsics = sorted(glob.glob(self.data_dir + '/*_cam.csv'))
 
+            # Add multiple iterations of each path if performing online refinement
+            all_image_paths_optimized = []
+            all_image_paths_seg_optimized = []
+            all_image_paths_intrinsics_optimized = []
+            if self.optimize:
+                for i in range(len(all_image_paths)):
+                    for j in range(self.repetition):
+                        all_image_paths_optimized.append(all_image_paths[i])
+                        all_image_paths_seg_optimized.append(all_image_paths_seg[i])
+                        all_image_paths_intrinsics_optimized.append(all_image_paths_intrinsics[i])
+
+                all_image_paths = all_image_paths_optimized
+                all_image_paths_seg = all_image_paths_seg_optimized
+                all_image_paths_intrinsics = all_image_paths_intrinsics_optimized
+
             # Update steps per epoch
             self.steps_per_epoch = int(len(all_image_paths)) / self.batch_size
 

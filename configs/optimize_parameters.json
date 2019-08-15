@@ -1,5 +1,5 @@
 {
-  "output_dir" : "/mnt/results_optimize/saved_images/office/office_40_delay_pretrained_lr_0002_8_9",
+  "output_dir" : "/mnt/results_optimized/saved_images/office/office_40_delay_pretrained_lr_0002_8_9",
   "data_dir" : "/mnt/train_data/warehouse_8_15",
   "using_saved_images" : true,
   "model_ckpt" : "/mnt/isaac_2019_2/apps/carter_sim_struct2depth/struct2depth/ckpts_best/saved_images/warehouse/40_delay_pretrained_lr_0002_10000_images_8_1/model-2422000",
