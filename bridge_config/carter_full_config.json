@@ -5,7 +5,7 @@
         {
           "name": "carter_1",
           "reference": "Blueprint'/Game/Carter/VehicleRigs/Pawn_Carter_FirstPerson.Pawn_Carter_FirstPerson'",
-          "pose": [1, 0, 0, 0, -11.01, 63.47, 0.92]
+          "pose": [1, 0, 0, 0, 1.50, -43.10, 0.5]
         }
       ]
     },

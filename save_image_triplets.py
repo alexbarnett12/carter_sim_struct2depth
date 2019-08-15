@@ -23,6 +23,7 @@ STEPSIZE = 1
 WIDTH = 416
 HEIGHT = 128
 TIME_DELAY = 0.4  # seconds
+ITERATIONS = 5
 
 OUTPUT_DIR = 'synth_images'
 
@@ -64,11 +65,11 @@ while True:
                     speed = float(row[0])
                 except ValueError:
                     speed = 0
-                    try:
-                        float(row[0])
-                        angular_speed = float(row[1])
-                    except ValueError:
-                        angular_speed = 0
+                try:
+                    float(row[0])
+                    angular_speed = float(row[1])
+                except ValueError:
+                    angular_speed = 0
 
     # Only save image if the robot is moving or rotating above a threshold speed
     # Images below these thresholds do not have a great enough disparity for the network to learn depth.
@@ -89,13 +90,14 @@ while True:
                                                                          images[i + 2][0]]))
 
             # Save to directory
-            cv2.imwrite('/mnt/sim_images/sim_images_40_delay_office/{}-office.png'.format(count),
-                        np.uint8(big_img))
-            cv2.imwrite('/mnt/sim_seg_masks_office/{}-office-fseg.png'.format(count), big_seg_img)
-            f = open('/mnt/sim_intrinsics_office/{}-office.csv'.format(count), 'w')
-            f.write(intrinsics)
-            f.close()
+            for j in range(ITERATIONS):
+                # cv2.imwrite('/mnt/test_images/office_sim/images/{}.png'.format(count), np.uint8(big_img))
+                # cv2.imwrite('/mnt/test_images/office_sim/seg_masks/{}-fseg.png'.format(count), big_seg_img)
+                f = open('/mnt/sim_data/sim_data_inner/{}_cam.txt'.format(count), 'w')
+                f.write(intrinsics)
+                f.close()
+                count += 1
 
             print('saved images: {}'.format(count))
 
-            count += 1
+            # count += 1

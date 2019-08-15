@@ -31,7 +31,7 @@ import time
 
 # Struct2depth imports
 import util
-from isaac_app import create_sample_bridge
+# from isaac_app import create_sample_bridge
 from process_image import ImageProcessor
 
 # Automatically parallelize tf.mapping function to maximize efficiency

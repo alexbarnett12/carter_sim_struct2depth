@@ -78,6 +78,7 @@ def display_images(image_ds):
         plt.yticks([])
         plt.show()
 
+
 class DataReader(object):
     """Reads stored sequences which are produced by dataset/gen_data.py."""
 
@@ -116,10 +117,23 @@ class DataReader(object):
         self.imagenet_norm = imagenet_norm
         self.shuffle = shuffle
         self.isaac_app = isaac_app
-        self.steps_per_epoch = int(self.num_saved_images/self.batch_size)
+        self.steps_per_epoch = int(self.num_saved_images / self.batch_size)
         self.optimize = optimize
         self.repetition = repetitions
 
+    def sort_paths(self, paths, root_dir, extension):
+        training_steps = []
+        for i in range(len(paths)):
+            training_steps.append(int(paths[i].split('/')[5].split('.')[0].split('-')[0]))
+
+        # Sort numbers
+        training_steps = sorted(training_steps)
+
+        sorted_paths = []
+        for i in range(len(training_steps)):
+            sorted_paths.append(os.path.join(root_dir, str(training_steps[i]) + extension))
+
+        return sorted_paths
 
     def read_data(self):
         """Provides images and camera intrinsics."""
@@ -144,9 +158,13 @@ class DataReader(object):
             data_root_seg = self.seg_mask_dir
             data_root_intrinsics = self.intrinsics_dir
 
-            all_image_paths = list(sorted(glob.glob(data_root_images + '/*')))
-            all_image_paths_seg = list(sorted(glob.glob(data_root_seg + '/*')))
-            all_image_paths_intrinsics = list(sorted(glob.glob(data_root_intrinsics + '/*')))
+            all_image_paths = glob.glob(data_root_images + '/*')
+            all_image_paths_seg = glob.glob(data_root_seg + '/*')
+            all_image_paths_intrinsics = glob.glob(data_root_intrinsics + '/*')
+
+            all_image_paths = self.sort_paths(all_image_paths, data_root_images, ".png")
+            all_image_paths_seg = self.sort_paths(all_image_paths_seg, data_root_seg, "-fseg.png")
+            all_image_paths_intrinsics = self.sort_paths(all_image_paths_intrinsics, data_root_intrinsics, ".csv")
 
             # Raw image triplets
             path_ds = tf.data.Dataset.from_tensor_slices(all_image_paths)
@@ -155,11 +173,12 @@ class DataReader(object):
             # Seg masks
             path_ds_seg = tf.data.Dataset.from_tensor_slices(all_image_paths_seg)
             seg_ds = path_ds_seg.map(load_and_preprocess_image, num_parallel_calls=AUTOTUNE)
-            seg_ds = seg_ds.map(lambda x: tf.cast(x, dtype=tf.uint8), num_parallel_calls=AUTOTUNE) # Must be uint8
+            seg_ds = seg_ds.map(lambda x: tf.cast(x, dtype=tf.uint8), num_parallel_calls=AUTOTUNE)  # Must be uint8
 
             # Camera intrinsics
             record_defaults = [tf.float32] * 9
-            intrinsics_ds = tf.data.experimental.CsvDataset(all_image_paths_intrinsics, record_defaults)  # Dataset of .csv lines
+            intrinsics_ds = tf.data.experimental.CsvDataset(all_image_paths_intrinsics,
+                                                            record_defaults)  # Dataset of .csv lines
             intrinsics_ds = intrinsics_ds.map(lambda *x: tf.convert_to_tensor(x))  # Convert to tensors
             intrinsics_ds = intrinsics_ds.map(lambda x: tf.reshape(x, [3, 3]))
 
@@ -229,11 +248,16 @@ class DataReader(object):
         # Shuffle and batch datasets
         with tf.name_scope('batching'):
             if self.shuffle:
-                image_stack_ds = image_stack_ds.shuffle(buffer_size=1500, seed=2).batch(self.batch_size, drop_remainder=True).repeat()
-                image_stack_norm = image_stack_norm.shuffle(buffer_size=1500, seed=2).batch(self.batch_size, drop_remainder=True).repeat()
-                seg_stack_ds = seg_stack_ds.shuffle(buffer_size=1500, seed=2).batch(self.batch_size, drop_remainder=True).repeat()
-                intrinsics_ds = intrinsics_ds.shuffle(buffer_size=1500, seed=2).batch(self.batch_size, drop_remainder=True).repeat()
-                intrinsics_inv = intrinsics_inv.shuffle(buffer_size=1500, seed=2).batch(self.batch_size, drop_remainder=True).repeat()
+                image_stack_ds = image_stack_ds.shuffle(buffer_size=1500, seed=2).batch(self.batch_size,
+                                                                                        drop_remainder=True).repeat()
+                image_stack_norm = image_stack_norm.shuffle(buffer_size=1500, seed=2).batch(self.batch_size,
+                                                                                            drop_remainder=True).repeat()
+                seg_stack_ds = seg_stack_ds.shuffle(buffer_size=1500, seed=2).batch(self.batch_size,
+                                                                                    drop_remainder=True).repeat()
+                intrinsics_ds = intrinsics_ds.shuffle(buffer_size=1500, seed=2).batch(self.batch_size,
+                                                                                      drop_remainder=True).repeat()
+                intrinsics_inv = intrinsics_inv.shuffle(buffer_size=1500, seed=2).batch(self.batch_size,
+                                                                                        drop_remainder=True).repeat()
 
             else:
                 image_stack_ds = image_stack_ds.batch(self.batch_size)
@@ -313,7 +337,6 @@ class DataReader(object):
         image_stack_aug = tf.clip_by_value(image_stack_aug, 0, 1)
         return image_stack_aug
 
-
     # Creates multi scale intrinsics based off number of scales provided.
     def get_multi_scale_intrinsics(self, intrinsics):
         intrinsics_multi_scale = []
@@ -337,6 +360,7 @@ class DataReader(object):
         im_sd = tf.tile(
             tf.constant(IMAGENET_SD), multiples=[self.seq_length])
         return (image_stack - im_mean) / im_sd
+
 
 # Class for flipping images, seg masks, and intrinsics
 # Provides greater variety in training dataset to avoid overfitting
@@ -395,15 +419,14 @@ class Cropper:
                  image_height=128):
         self.orig_img_width = image_width
         self.orig_img_height = image_height
-        self.scaled_img_width = image_width # New image width before cropping to original dimensions
-        self.scaled_img_height = image_height # New image height before cropping to original dimensions
+        self.scaled_img_width = image_width  # New image width before cropping to original dimensions
+        self.scaled_img_height = image_height  # New image height before cropping to original dimensions
 
     # Scale and crop image.
     def scale_and_crop_image(self, im):
         im = self.scale_images_randomly(im)
         im = self.crop_images_randomly(im)
         return im
-
 
     # Scale image randomly. Seed used to match corresponding image, seg mask, and intrinsics.
     # Scales to a random number with greater dimensions than the original.
@@ -419,7 +442,6 @@ class Cropper:
         im = tf.image.resize_area(im, [self.scaled_img_height, self.scaled_img_width])
         return im[0]
 
-
     # Crop image randomly. Outputs image with its original height and width.
     def crop_images_randomly(self, im):
         offset_y = tf.random_uniform([1], 0, self.scaled_img_height - self.orig_img_height + 1, dtype=tf.int32, seed=2)[
@@ -428,7 +450,6 @@ class Cropper:
         im = tf.image.crop_to_bounding_box(im, offset_y, offset_x, self.orig_img_height, self.orig_img_width)
         return im
 
-
     # Scales and crops intrinsics, keeping them matched with their corresponding image stacks.
     # Make sure to scale and crop images first, as the randomly scaled image widths and heights are needed to
     # scale and crop intrinsics.
@@ -436,7 +457,6 @@ class Cropper:
         intrinsics = self.scale_intrinsics_randomly(intrinsics)
         intrinsics = self.crop_intrinsics_randomly(intrinsics)
         return intrinsics
-
 
     # Scale intrinsics randomly. Seed used to match corresponding image, seg mask, and intrinsics.
     def scale_intrinsics_randomly(self, intrinsics):
@@ -449,7 +469,6 @@ class Cropper:
         cx = intrinsics[0, 2] * x_scaling
         cy = intrinsics[1, 2] * y_scaling
         return make_intrinsics_matrix(fx, fy, cx, cy)
-
 
     # Crop intrinsics randomly. It is assumed that the images has already been cropped, so that
     # the scaled image height and width are already known and saved in class state.

@@ -71,11 +71,11 @@ while True:
                     speed = float(row[0])
                 except ValueError:
                     speed = 0
-                    try:
-                        float(row[0])
-                        angular_speed = float(row[1])
-                    except ValueError:
-                        angular_speed = 0
+                try:
+                    float(row[0])
+                    angular_speed = float(row[1])
+                except ValueError:
+                    angular_speed = 0
 
     # Only save image if the robot is moving or rotating above a threshold speed
     # Images below these thresholds do not have a great enough disparity for the network to learn depth.
@@ -93,11 +93,11 @@ while True:
             seg_img = np.zeros(shape=(HEIGHT, WIDTH, 3))
 
             # Save to directory
-            cv2.imwrite('/mnt/test_images/warehouse_sim/{}.png'.format(gct), np.uint8(img))
-            # cv2.imwrite('/mnt/sim_seg_masks/test/{}-fseg.png'.format(gct), seg_img)
-            # f = open('/mnt/sim_intrinsics/test/{}.csv'.format(gct), 'w')
-            # f.write(intrinsics)
-            # f.close()
+            # cv2.imwrite('/mnt/test_images/office_sim/images/{}.png'.format(gct), np.uint8(img))
+            cv2.imwrite('/mnt/test_images/office_sim/seg_masks/{}-fseg.png'.format(gct), seg_img)
+            f = open('/mnt/test_images/office_sim/intrinsics/{}.csv'.format(gct), 'w')
+            f.write(intrinsics)
+            f.close()
 
             print('Saved images: {}'.format(gct))
             gct += 1
