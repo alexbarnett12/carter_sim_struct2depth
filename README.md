@@ -1,9 +1,6 @@
 # carter_sim_struct2depth
 This is an application that deploys a virtual autonomous robot using NVIDIA Isaac SDK and the Unreal Engine to 
-train a monocular depth and egomotion convolutional neural network. The goal is to investigate how well monocular depth 
-can be learned from photo-realistic virtual data by training the net with the Unreal Engine and testing the model in the 
-real world. The algorithm also incorporates online refinement to improve accuracy in unknown environments. Ideally, 
-the model can be trained solely on virtual data and then online refinement would be used to adjust the model to real data.
+train a neural network that predicts monocular depth, egomotion, and object motion from image sequences. The goal is to investigate how well monocular depth can be learned from photo-realistic virtual data and how well the model will generalize to the real world. The algorithm also incorporates online refinement to train in real-time and improve accuracy in unknown environments. Ideally, the model can be trained solely on virtual data and then online refinement would be used to adjust the model in real-time.
 
 ## Struct2Depth   
 Struct2depth is a state-of-the-art unsupervised monocular depth network created by Google. The original work can be 
