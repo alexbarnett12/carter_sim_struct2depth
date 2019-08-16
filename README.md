@@ -104,18 +104,36 @@ To run inference on saved images, use:
 
 `python3 struct2depth/inference.py --input_dir /path/to/input --output_dir /path/to/output --model_ckpt /path/to/ckpt`
 
+Alternatively, the script can be run on multiple models consecutively to allow for easy comparison between models at 
+different epochs. To do so, edit the `EPOCHS` global array and `TRAINING_BATCH_SIZE` parameter in `struct2depth/inference.py` with the epochs you would like 
+to analyze and the batch size used for training. Then run:
+
+`python3 struct2depth/inference.py --multiple_ckpts True --ckpt_dir /path/to/ckpts --data_dir /path/to/training/data 
+--input_dir /path/to/input --output_dir /path/to/output --model_ckpt /path/to/ckpt`
+
+`data_dir` is your original training data, so that the script knows the dataset size and can find the model checkpoint
+closest to the desired epoch.
+
+
 Images just need to be saved into one folder for input_dir. 
 
 ## Online Refinement
-Online refinement can currently only be used on saved images. To do so, save images, seg masks, and intrinsics in a single
-directory. All names should be paired, with seg masks ending in "-fseg.png" and intrinsics ending in "_cam.txt." Then run 
-`gen_eigen_txt.py` to generate a file with all image names. Finally, run online refinement:
+Online refinement can currently only be used on saved images. To do so, save image triplets, seg masks, and intrinsics in a single
+directory. All names should be paired, with seg masks ending in "-fseg.png" and intrinsics ending in "_cam.txt." Edit 
+`configs/optimize_parameters.json` and modify these parameters:
 
-`python3 struct2depth/optimize_orig.py --output_dir /path/to/output --data_dir /path/to/data --triplet_list_file /path/to
-/eigen_triplets.txt --triplet_list_file_remains /path/to/remains --model_ckpt /path/to/ckpt`
+`output_dir`: Directory to save inference results.
 
-`triplet_list_file_remains` is optional and represents any images that should not be finetuned. It has the same format as 
-`eigen_triplets.txt`
+`data_dir`: Input directory with images. Names must be paired as numbers w/ zero-padding.
+
+`model_ckpt`: Model checkpoint used for inference.
+
+`checkpoint_dir`: Directory to save refined models.
+
+Finally, run:
+
+`bazel run optimize`
+
 
 ## Running Isaac Sim on a Server
 It is possible to use a remote server to train with Isaac Sim. Since Isaac Sim has specific CUDA and NVIDIA driver 
