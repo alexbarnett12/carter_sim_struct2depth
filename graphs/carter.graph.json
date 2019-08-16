@@ -297,11 +297,15 @@
       ]
     },
     {
-      "name": "ping",
+      "name": "seg_mask",
       "components": [
         {
-          "name": "ping",
-          "type": "Ping"
+          "name": "message_ledger",
+          "type": "isaac::alice::MessageLedger"
+        },
+        {
+          "name": "seg_mask",
+          "type": "SegMask"
         }
       ]
     }
@@ -338,6 +342,10 @@
     {
       "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/SegmentationSensor",
       "target": "LeftSegmentationEncoder/isaac.ml.SegmentationEncoder/segmentation"
+    },
+    {
+      "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/SegmentationSensor",
+      "target": "seg_mask/seg_mask/seg_masks"
     },
     {
       "source": "LeftCameraSubscriber/isaac.alice.TcpSubscriber/BoundingBox",

@@ -1,4 +1,5 @@
 #pragma once
+#include "engine/alice/alice.hpp"
 #include "engine/alice/alice_codelet.hpp"
 #include "messages/messages.hpp"
 
@@ -11,8 +12,7 @@ public:
 
     void stop() override;
 
-    ISAAC_PROTO_RX(SegmentationCameraProto, seg_masks
-    )
+    ISAAC_PROTO_RX(SegmentationCameraProto, seg_masks)
 };
 
 

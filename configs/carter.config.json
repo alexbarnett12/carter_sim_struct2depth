@@ -5,11 +5,6 @@
 	    "cols": 416
 	}
   },
-  "ping" : {
-      "ping" : {
-        "tick_period" : "1Hz"
-      }
-    },
   "LeftSegmentationEncoder": {
     "isaac.ml.SegmentationEncoder": {
       "rows": 128,

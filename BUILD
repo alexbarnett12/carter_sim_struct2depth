@@ -28,8 +28,14 @@ isaac_app(
         "viewers",
         "flatsim",
         "ml",
-        "//packages/ping:ping_components"
     ],
+)
+
+isaac_cc_module(
+    name = "seg_mask",
+    srcs = ["SegMask.cpp"],
+    hdrs = ["SegMask.hpp"],
+    visibility = ["//visibility:public"],
 )
 
 isaac_app(
@@ -58,6 +64,7 @@ py_binary(
         "//packages/perception:libperception_module.so",
         "//packages/planner:libplanner_module.so",
         "//packages/viewers:libviewers_module.so",
+        "//apps/carter_sim_struct2depth:libseg_mask_module.so"
     ],
     deps = [
         "//engine/pyalice",

@@ -205,45 +205,45 @@ def main(_):
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = cuda_device
 
-    train_model = model.Model(image_dir=image_dir,
-                              seg_mask_dir=seg_mask_dir,
-                              intrinsics_dir=intrinsics_dir,
-                              num_saved_images=num_saved_images,
-                              using_saved_images=using_saved_images,
-                              file_extension=file_extension,
-                              is_training=True,
-                              learning_rate=learning_rate,
-                              beta1=beta1,
-                              reconstr_weight=reconstr_weight,
-                              smooth_weight=smooth_weight,
-                              ssim_weight=ssim_weight,
-                              icp_weight=icp_weight,
-                              batch_size=batch_size,
-                              img_height=img_height,
-                              img_width=img_width,
-                              seq_length=seq_length,
-                              architecture=architecture,
-                              imagenet_norm=imagenet_norm,
-                              weight_reg=weight_reg,
-                              exhaustive_mode=exhaustive_mode,
-                              random_scale_crop=random_scale_crop,
-                              flipping_mode=flipping_mode,
-                              depth_upsampling=depth_upsampling,
-                              depth_normalization=depth_normalization,
-                              compute_minimum_loss=compute_minimum_loss,
-                              use_skip=use_skip,
-                              joint_encoder=joint_encoder,
-                              shuffle=shuffle,
-                              handle_motion=handle_motion,
-                              equal_weighting=equal_weighting,
-                              size_constraint_weight=size_constraint_weight,
-                              isaac_app=isaac_app,
-                              time_delay=time_delay,
-                              num_isaac_samples=num_isaac_samples,
-                              speed_threshold=speed_threshold,
-                              angular_speed_threshold=angular_speed_threshold)
+    # train_model = model.Model(image_dir=image_dir,
+    #                           seg_mask_dir=seg_mask_dir,
+    #                           intrinsics_dir=intrinsics_dir,
+    #                           num_saved_images=num_saved_images,
+    #                           using_saved_images=using_saved_images,
+    #                           file_extension=file_extension,
+    #                           is_training=True,
+    #                           learning_rate=learning_rate,
+    #                           beta1=beta1,
+    #                           reconstr_weight=reconstr_weight,
+    #                           smooth_weight=smooth_weight,
+    #                           ssim_weight=ssim_weight,
+    #                           icp_weight=icp_weight,
+    #                           batch_size=batch_size,
+    #                           img_height=img_height,
+    #                           img_width=img_width,
+    #                           seq_length=seq_length,
+    #                           architecture=architecture,
+    #                           imagenet_norm=imagenet_norm,
+    #                           weight_reg=weight_reg,
+    #                           exhaustive_mode=exhaustive_mode,
+    #                           random_scale_crop=random_scale_crop,
+    #                           flipping_mode=flipping_mode,
+    #                           depth_upsampling=depth_upsampling,
+    #                           depth_normalization=depth_normalization,
+    #                           compute_minimum_loss=compute_minimum_loss,
+    #                           use_skip=use_skip,
+    #                           joint_encoder=joint_encoder,
+    #                           shuffle=shuffle,
+    #                           handle_motion=handle_motion,
+    #                           equal_weighting=equal_weighting,
+    #                           size_constraint_weight=size_constraint_weight,
+    #                           isaac_app=isaac_app,
+    #                           time_delay=time_delay,
+    #                           num_isaac_samples=num_isaac_samples,
+    #                           speed_threshold=speed_threshold,
+    #                           angular_speed_threshold=angular_speed_threshold)
 
-    train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir, train_steps,
+    train(None, pretrained_ckpt, imagenet_ckpt, checkpoint_dir, train_steps,
           summary_freq, isaac_app, max_ckpts_to_keep, save_ckpt_every, using_saved_images)
 
 
@@ -251,39 +251,41 @@ def train(train_model, pretrained_ckpt, imagenet_ckpt, checkpoint_dir, train_ste
           summary_freq, isaac_app, max_ckpts_to_keep, save_ckpt_every, using_saved_images):
     """Train model."""
 
-    vars_to_restore = None
-    if pretrained_ckpt is not None:
-        vars_to_restore = util.get_vars_to_save_and_restore(pretrained_ckpt)
-        ckpt_path = pretrained_ckpt
-    elif imagenet_ckpt:
-        vars_to_restore = util.get_imagenet_vars_to_restore(imagenet_ckpt)
-        ckpt_path = imagenet_ckpt
-    pretrain_restorer = tf.train.Saver(vars_to_restore)
-    vars_to_save = util.get_vars_to_save_and_restore()
-    vars_to_save[train_model.global_step.op.name] = train_model.global_step
-    saver = tf.train.Saver(vars_to_save, max_to_keep=max_ckpts_to_keep)
-    sv = tf.train.Supervisor(logdir=checkpoint_dir, save_summaries_secs=0,
-                             saver=None)
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    with sv.managed_session(config=config) as sess:
-
-        if pretrained_ckpt is not None or imagenet_ckpt:
-            logging.info('Restoring pretrained weights from %s', ckpt_path)
-            pretrain_restorer.restore(sess, ckpt_path)
-
-        logging.info('Attempting to resume training from %s...', checkpoint_dir)
-        checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
-        logging.info('Last checkpoint found: %s', checkpoint)
-        if checkpoint:
-            saver.restore(sess, checkpoint)
-
-        logging.info('Training...')
-
-        # Start the application and Sight server
-        if not using_saved_images:
-            start_isaac_app(isaac_app)
-            logging.info("Isaac application loaded")
+    # vars_to_restore = None
+    # if pretrained_ckpt is not None:
+    #     vars_to_restore = util.get_vars_to_save_and_restore(pretrained_ckpt)
+    #     ckpt_path = pretrained_ckpt
+    # elif imagenet_ckpt:
+    #     vars_to_restore = util.get_imagenet_vars_to_restore(imagenet_ckpt)
+    #     ckpt_path = imagenet_ckpt
+    # pretrain_restorer = tf.train.Saver(vars_to_restore)
+    # vars_to_save = util.get_vars_to_save_and_restore()
+    # vars_to_save[train_model.global_step.op.name] = train_model.global_step
+    # saver = tf.train.Saver(vars_to_save, max_to_keep=max_ckpts_to_keep)
+    # sv = tf.train.Supervisor(logdir=checkpoint_dir, save_summaries_secs=0,
+    #                          saver=None)
+    # config = tf.ConfigProto()
+    # config.gpu_options.allow_growth = True
+    # with sv.managed_session(config=config) as sess:
+    #
+    #     if pretrained_ckpt is not None or imagenet_ckpt:
+    #         logging.info('Restoring pretrained weights from %s', ckpt_path)
+    #         pretrain_restorer.restore(sess, ckpt_path)
+    #
+    #     logging.info('Attempting to resume training from %s...', checkpoint_dir)
+    #     checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
+    #     logging.info('Last checkpoint found: %s', checkpoint)
+    #     if checkpoint:
+    #         saver.restore(sess, checkpoint)
+    #
+    #     logging.info('Training...')
+    #
+    #     Start the application and Sight server
+    if not using_saved_images:
+        start_isaac_app(isaac_app)
+        logging.info("Isaac application loaded")
+        while True:
+            x = 0
 
         start_time = time.time()
         last_summary_time = time.time()
