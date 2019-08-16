@@ -79,7 +79,7 @@ while True:
 
     # Only save image if the robot is moving or rotating above a threshold speed
     # Images below these thresholds do not have a great enough disparity for the network to learn depth.
-    if speed > 0.25 or angular_speed > 0.25:
+    if speed > 0 or angular_speed > 0:
         images = bridge.acquire_samples(sample_num)
 
         # Create wide image and segmentation triplets
@@ -93,11 +93,11 @@ while True:
             seg_img = np.zeros(shape=(HEIGHT, WIDTH, 3))
 
             # Save to directory
-            # cv2.imwrite('/mnt/test_images/office_sim/images/{}.png'.format(gct), np.uint8(img))
-            cv2.imwrite('/mnt/test_images/office_sim/seg_masks/{}-fseg.png'.format(gct), seg_img)
-            f = open('/mnt/test_images/office_sim/intrinsics/{}.csv'.format(gct), 'w')
-            f.write(intrinsics)
-            f.close()
+            cv2.imwrite('/mnt/test_data/office_sim/{}.png'.format(gct), np.uint8(img))
+            # cv2.imwrite('/mnt/test_data/warehouse_sim/seg_masks/{}-fseg.png'.format(gct), seg_img)
+            # f = open('/mnt/test_images/office_sim/intrinsics/{}.csv'.format(gct), 'w')
+            # f.write(intrinsics)
+            # f.close()
 
             print('Saved images: {}'.format(gct))
             gct += 1
