@@ -4,12 +4,9 @@ train a neural network that predicts monocular depth, egomotion, and object moti
 
 ## Struct2Depth   
 Struct2depth is a state-of-the-art unsupervised monocular depth network created by Google. The original work can be 
-found here: https://sites.google.com/view/struct2depth. The network takes a time sequence of three images and learns 
-depth and egomotion by recreating the middle image in the sequence from the two outer images and calculating photometric
-error as a loss function. The model can also predict individual object egomotion when trained along with prior 
-segmentation masks of moving objects in the image sequence. 
+found here: https://sites.google.com/view/struct2depth. The network takes a time sequence of three images (taken with motion between them) and learns depth and egomotion by reprojecting the middle image in the sequence from the two outer images and calculating photometric error as a loss function. The model can also predict individual object egomotion in the image sequence when trained along with prior segmentation masks of moving objects. 
 
-This project uses the same CNN but the input pipeline has been updated to use the more efficient TensorFlow Dataset API
+This project uses the same CNN model but the input pipeline has been updated to use the more efficient TensorFlow Dataset API
 over the deprecated feed dict pipeline. 
 
 ## Prerequisites
@@ -19,11 +16,7 @@ First make sure that you have downloaded and followed the instructions to instal
 
 **Isaac Sim:** https://docs.nvidia.com/isaac/isaac_sim/setup.html
 
-Pay extra attention to the NVIDIA GPU and driver requirements; CUDA 10.0 is required with driver 418, and at this time
-**the RTX 2080 Ti does not work with these packages and Isaac Sim.**
-
-Once you have installed NVIDIA Isaac and followed their basic tutorials, you can run all the programs in this repo the same way
-with Bazel. 
+Once you have installed NVIDIA Isaac and followed their basic tutorials, you can run all the programs in this repo the same way with Bazel. 
 
 ## Training
 The model can be trained either straight from the simulation or with saved data. All training parameters can be 
