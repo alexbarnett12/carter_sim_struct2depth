@@ -141,4 +141,9 @@ Make sure to reference the correct bridge_config file when starting Isaac Sim. F
 You can also edit the ports manually. Make sure that the publisher/subscriber ports in `configs/carter.config.json` match with 
 corresponding ports in `bridge_config/carter_full_config.json`
 
+## Future Work
+The work so far on this project has set up the infrastructure to train monocular depth CNNS with Isaac Sim simulation environments. Now that this is established, a lot of work can be done to create realistic Isaac Sim environments and see how they impact the fidelity of the trained model. The basic environments that come with Isaac Sim are pretty bare bones and could use a lot of work. 
+
+Another aspect to look into is furthering the use of online refinement. Currently online refinement can only be run on saved images, but its real potential comes from training a model on simulation data and then running online refinement in the real world during inference to continually improve the model during deployment. 
+
 
