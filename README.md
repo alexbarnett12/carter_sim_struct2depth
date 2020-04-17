@@ -2,6 +2,8 @@
 This is an application that deploys a virtual autonomous robot using NVIDIA Isaac SDK and the Unreal Engine to 
 train a neural network that predicts monocular depth, egomotion, and object motion from image sequences. The goal is to investigate how well monocular depth can be learned from photo-realistic virtual data and how well the model will generalize to the real world. The algorithm also incorporates online refinement to train in real-time and improve accuracy in unknown environments. Ideally, the model can be trained solely on virtual data and then online refinement would be used to adjust the model in real-time.
 
+![Models trained on simulation and real data](inference.gif)
+
 ## Struct2Depth   
 Struct2depth is a state-of-the-art unsupervised monocular depth network created by Google. The original work can be 
 found here: https://sites.google.com/view/struct2depth. The network takes a time sequence of three images (taken with motion between them) and learns depth and egomotion by reprojecting the middle image in the sequence from the two outer images and calculating photometric error as a loss function. The model can also predict individual object egomotion in the image sequence when trained along with prior segmentation masks of moving objects. 
