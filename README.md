@@ -2,6 +2,8 @@
 This is an application that deploys a virtual autonomous robot using NVIDIA Isaac SDK and the Unreal Engine to 
 train a neural network that predicts monocular depth, egomotion, and object motion from image sequences. The goal is to investigate how well monocular depth can be learned from photo-realistic virtual data and how well the model will generalize to the real world. The algorithm also incorporates online refinement to train in real-time and improve accuracy in unknown environments. Ideally, the model can be trained solely on virtual data and then online refinement would be used to adjust the model in real-time.
 
+This video shows inference from a model trained on simulation data from the Isaac Sim warehouse map. The model can predict a very high fidelity depth map while in simulation, but still has a lot of trouble generalizing to real-world environments. This could be solved by creating a more realistic simulation environment for training. The environment used here was the default Isaac Sim environment. This repo can now be used to train the struct2depth net with any Isaac Sim environment. 
+
 ![Models trained on simulation and real data](inference.gif)
 
 ## Struct2Depth   
